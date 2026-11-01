@@ -1,0 +1,3 @@
+Vibe coding means describing what you want in plain language and letting an AI assistant write the code.
+You stay in charge: you decide what to build, you read what the assistant wrote, and you test that it works.
+Good instructions lead to good code. Clear instructions, small steps, and real tests make the difference.
