@@ -1,151 +1,210 @@
-"""Week 3 lab script: review this before running it.
+"""
+Week 3 review exercise: a realistic Streamlit app with file I/O, an API call,
+and data processing. This is the kind of code Claude Code might generate for you.
 
-What this script claims to do:
-    Read every .txt file in a folder, send each file's text to a free
-    public summarization API (api.sampleapis.com — used here as a stand-in),
-    and write the results to a CSV file called "summaries.csv".
+Your job: read it with the safety_checklist.md and explain what each section does.
+You do not need to understand every line — you need to understand what it does.
 
-How to run it:
-    1. Activate your virtual environment: source venv/bin/activate
-    2. Install the one required library: pip install requests
-    3. Run: python review_me.py <folder_of_txt_files>
-
-Example:
-    python review_me.py ../week-01-first-tool/starter
-
-Lab task:
-    Do NOT run this script yet.
-    First, work through safety_checklist.md with your AI assistant.
-    Then come back to Part 3 of the lab and run it here.
+Run it:
+    pip install streamlit requests
+    streamlit run review_me.py
 """
 
-import csv
+import json
 import os
-import sys
+import sqlite3
 import requests
+import streamlit as st
+from datetime import datetime
+
+# -----------------------------------------------------------------------
+# Database setup
+# Creates the SQLite database and the notes table if they do not exist yet.
+# The database file is stored in the same folder as this script.
+# -----------------------------------------------------------------------
+
+DB_PATH = "notes.db"
 
 
-# ---------------------------------------------------------------------------
-# Configuration
-# ---------------------------------------------------------------------------
-
-# The API endpoint. In a real tool this would be something like the OpenAI
-# or Anthropic API. Here we use a harmless public API as a placeholder
-# so the script exercises network code without requiring an API key.
-API_URL = "https://api.sampleapis.com/coffee/hot"
-
-# The output file that this script will create (or overwrite if it exists).
-OUTPUT_FILE = "summaries.csv"
-
-# Maximum number of characters to read from each file.
-MAX_CHARS = 2000
+def get_connection():
+    """Open a connection to the SQLite database."""
+    return sqlite3.connect(DB_PATH)
 
 
-# ---------------------------------------------------------------------------
-# Helper functions
-# ---------------------------------------------------------------------------
+def initialize_database():
+    """Create the notes table if it does not already exist."""
+    conn = get_connection()
+    conn.execute(
+        """
+        CREATE TABLE IF NOT EXISTS notes (
+            id        INTEGER PRIMARY KEY AUTOINCREMENT,
+            title     TEXT    NOT NULL,
+            content   TEXT    NOT NULL,
+            tag       TEXT    DEFAULT '',
+            created_at TEXT   NOT NULL
+        )
+        """
+    )
+    conn.commit()
+    conn.close()
 
-def find_text_files(folder: str) -> list[str]:
-    """Return a sorted list of .txt file paths inside folder."""
-    if not os.path.isdir(folder):
-        print(f"Error: '{folder}' is not a folder or does not exist.")
-        sys.exit(1)
 
-    paths = []
-    for entry in os.scandir(folder):
-        if entry.is_file() and entry.name.endswith(".txt"):
-            paths.append(entry.path)
-    return sorted(paths)
+# -----------------------------------------------------------------------
+# Database helpers: the four CRUD operations
+# CRUD = Create, Read, Update, Delete
+# -----------------------------------------------------------------------
+
+def add_note(title: str, content: str, tag: str) -> None:
+    """Insert a new note into the database."""
+    conn = get_connection()
+    conn.execute(
+        "INSERT INTO notes (title, content, tag, created_at) VALUES (?, ?, ?, ?)",
+        (title, content, tag, datetime.now().isoformat()),
+    )
+    conn.commit()
+    conn.close()
 
 
-def read_file(path: str) -> str:
-    """Read up to MAX_CHARS characters from a text file."""
+def get_all_notes() -> list[dict]:
+    """Return all notes from the database, newest first."""
+    conn = get_connection()
+    cursor = conn.execute(
+        "SELECT id, title, content, tag, created_at FROM notes ORDER BY created_at DESC"
+    )
+    rows = cursor.fetchall()
+    conn.close()
+    # Convert each row (a tuple) into a dictionary so it is easier to work with
+    return [
+        {"id": r[0], "title": r[1], "content": r[2], "tag": r[3], "created_at": r[4]}
+        for r in rows
+    ]
+
+
+def delete_note(note_id: int) -> None:
+    """Delete a note by its ID."""
+    conn = get_connection()
+    conn.execute("DELETE FROM notes WHERE id = ?", (note_id,))
+    conn.commit()
+    conn.close()
+
+
+def search_notes(query: str) -> list[dict]:
+    """Return notes whose title or content contains the search query."""
+    conn = get_connection()
+    cursor = conn.execute(
+        "SELECT id, title, content, tag, created_at FROM notes "
+        "WHERE title LIKE ? OR content LIKE ? "
+        "ORDER BY created_at DESC",
+        (f"%{query}%", f"%{query}%"),
+    )
+    rows = cursor.fetchall()
+    conn.close()
+    return [
+        {"id": r[0], "title": r[1], "content": r[2], "tag": r[3], "created_at": r[4]}
+        for r in rows
+    ]
+
+
+# -----------------------------------------------------------------------
+# API call: fetch a random motivational quote
+# This function makes a network request to an external service.
+# NOTE: this is a place to review when using safety_checklist.md.
+# -----------------------------------------------------------------------
+
+def fetch_quote() -> str:
+    """Fetch a random quote from the ZenQuotes API. Returns a fallback string on failure."""
     try:
-        with open(path, encoding="utf-8") as f:
-            return f.read(MAX_CHARS)
-    except OSError as exc:
-        print(f"Warning: could not read {path}: {exc}")
-        return ""
-
-
-def call_api(text: str) -> dict:
-    """Make a GET request to API_URL.
-
-    NOTE: In this demo script the 'text' argument is not actually sent to
-    the API — the placeholder API does not accept a body. In a real tool
-    you would POST the text. This function is here to show students what
-    a network call looks like and to exercise the 'requests' import.
-    """
-    try:
-        response = requests.get(API_URL, timeout=10)
+        # This makes an HTTP GET request to an external URL
+        response = requests.get("https://zenquotes.io/api/random", timeout=5)
         response.raise_for_status()
         data = response.json()
-        # Return just the first item from the response as a stand-in "result".
-        if isinstance(data, list) and len(data) > 0:
-            return data[0]
-        return {}
-    except requests.exceptions.ConnectionError:
-        print("Warning: could not reach the API. Are you connected to the internet?")
-        return {}
-    except requests.exceptions.Timeout:
-        print("Warning: the API request timed out.")
-        return {}
-    except requests.exceptions.HTTPError as exc:
-        print(f"Warning: API returned an error: {exc}")
-        return {}
+        return f'"{data[0]["q"]}" — {data[0]["a"]}'
+    except Exception:
+        # If the API is unavailable, return a hardcoded fallback
+        return '"Write it down. Written goals have a way of transforming themselves into action." — Unknown'
 
 
-def write_results(results: list[dict], output_path: str) -> None:
-    """Write a list of result dicts to a CSV file."""
-    if not results:
-        print("No results to write.")
-        return
+# -----------------------------------------------------------------------
+# Export helper: write notes to a JSON file
+# NOTE: this writes a file to disk — another item for safety_checklist.md.
+# -----------------------------------------------------------------------
 
-    fieldnames = ["filename", "char_count", "api_result_title", "api_result_id"]
-    with open(output_path, "w", newline="", encoding="utf-8") as f:
-        writer = csv.DictWriter(f, fieldnames=fieldnames)
-        writer.writeheader()
-        writer.writerows(results)
-
-    print(f"Saved results to {output_path} ({len(results)} rows).")
+def export_notes_to_json(notes: list[dict]) -> str:
+    """Write all notes to a JSON file and return the file path."""
+    export_path = "notes_export.json"
+    with open(export_path, "w", encoding="utf-8") as f:
+        json.dump(notes, f, indent=2)
+    return export_path
 
 
-# ---------------------------------------------------------------------------
-# Main
-# ---------------------------------------------------------------------------
+# -----------------------------------------------------------------------
+# Streamlit UI
+# Everything below is the user interface. Streamlit reruns this entire
+# script on every user interaction, so all state must go in st.session_state.
+# -----------------------------------------------------------------------
 
-def main() -> None:
-    if len(sys.argv) != 2:
-        print("Usage: python review_me.py <folder>")
-        print("Example: python review_me.py ../week-01-first-tool/starter")
-        sys.exit(1)
+def main():
+    st.title("My Notes App")
+    st.caption("A simple note-taking tool with search, tags, and export.")
 
-    folder = sys.argv[1]
-    txt_files = find_text_files(folder)
+    # Initialize the database on first run
+    initialize_database()
 
-    if not txt_files:
-        print(f"No .txt files found in: {folder}")
-        sys.exit(0)
+    # --- Sidebar: add a new note ---
+    with st.sidebar:
+        st.header("Add a Note")
+        new_title = st.text_input("Title")
+        new_content = st.text_area("Content", height=120)
+        new_tag = st.selectbox("Tag", ["", "work", "personal", "idea", "todo"])
+        if st.button("Save Note", type="primary"):
+            if new_title.strip() and new_content.strip():
+                add_note(new_title.strip(), new_content.strip(), new_tag)
+                st.success("Note saved.")
+                st.rerun()
+            else:
+                st.error("Please fill in both the title and content.")
 
-    print(f"Found {len(txt_files)} .txt file(s). Processing...")
+        st.divider()
 
-    results = []
-    for path in txt_files:
-        text = read_file(path)
-        if not text:
-            continue
+        # Export button: writes a file to disk
+        if st.button("Export All Notes to JSON"):
+            all_notes = get_all_notes()
+            if all_notes:
+                path = export_notes_to_json(all_notes)
+                st.success(f"Exported {len(all_notes)} notes to {path}")
+            else:
+                st.info("No notes to export yet.")
 
-        print(f"  Processing: {os.path.basename(path)} ({len(text)} chars)...")
-        api_data = call_api(text)
+    # --- Main area: search and display notes ---
+    search_query = st.text_input("Search notes", placeholder="Type to search by title or content...")
 
-        results.append({
-            "filename": os.path.basename(path),
-            "char_count": len(text),
-            "api_result_title": api_data.get("title", ""),
-            "api_result_id": api_data.get("id", ""),
-        })
+    if search_query:
+        notes = search_notes(search_query)
+    else:
+        notes = get_all_notes()
 
-    write_results(results, OUTPUT_FILE)
+    # --- Quote of the day ---
+    with st.expander("Quote of the Day"):
+        if st.button("Fetch a new quote"):
+            st.session_state["quote"] = fetch_quote()
+        if "quote" not in st.session_state:
+            st.session_state["quote"] = fetch_quote()
+        st.write(st.session_state["quote"])
+
+    st.divider()
+
+    # --- Display notes ---
+    if not notes:
+        st.info("No notes yet. Add one using the sidebar.")
+    else:
+        st.write(f"{len(notes)} note(s) found.")
+        for note in notes:
+            with st.expander(f"{note['title']}  {'#' + note['tag'] if note['tag'] else ''}"):
+                st.write(note["content"])
+                st.caption(f"Saved: {note['created_at'][:10]}")
+                if st.button("Delete", key=f"delete_{note['id']}"):
+                    delete_note(note["id"])
+                    st.rerun()
 
 
 if __name__ == "__main__":

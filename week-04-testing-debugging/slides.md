@@ -6,227 +6,221 @@ footer: "TECH 85 · Week 4 · Stanford Continuing Studies"
 ---
 
 <!-- _class: lead -->
-# Week 4: Testing and Debugging with AI
+# Week 4: Claude Code + Git
 ### TECH 85: Vibe Coding
-Stanford Continuing Studies · Feb 9, 2027
+Stanford Continuing Studies · February 10
 
 ---
 
 ## Agenda
 
-1. What a test actually is
-2. Why tests matter when using AI
-3. Reading a traceback without panicking
-4. The debug loop
-5. Demo: catching a bug with a test
-6. Lab: find and fix three deliberate bugs
+1. Recap: Project 1 demos
+2. Claude Code as a full coding agent
+3. The bug description formula
+4. Git: commits as save states
+5. The break-fix loop
+6. Lab Part 1: Git setup
+7. Guest Speaker: Steve
+8. Lab Part 2: Break your app, fix it
 
 ---
 
-## The Problem with "Looks Right"
+## Recap: what you have shipped
 
-You run your tool. It does not crash. The output looks reasonable.
+By now every student has:
+- A Project 1 app running at a live Streamlit Cloud URL
+- A BRIEF.md that specifies what it does
+- A CLAUDE.md that gives Claude Code memory of the project
 
-Are you done?
+That is a deployable web application. Built in two weeks. With no prior programming experience.
 
-**Not quite.**
-
-What if:
-- The word count is off by one in some edge case?
-- The tool silently skips files with special characters?
-- An AI edit last week accidentally changed the behavior?
-
-"Looks right" is not the same as "is correct." Tests give you certainty.
+This week we add two things that make the ongoing development work safer and faster: **precise debugging** and **Git checkpoints**.
 
 ---
 
-## What Is a Test?
+## Claude Code is not a chatbot
 
-A test is a small piece of code that asks: **"If I give this function input X, do I get output Y?"**
+You have been using Claude Code to write code. Let us look at what it is actually doing.
 
-```python
-total, top_words = count_words("the cat sat on the mat")
+When you give Claude Code a task — "add a delete button to each note" — here is what happens:
 
-assert total == 6
-assert top_words[0][0] == "cat"  # most common non-trivial word
+1. It reads your `app.py` file (and `CLAUDE.md` if it exists)
+2. It reasons about what needs to change
+3. It writes the changes directly to your file
+4. It runs `streamlit run app.py` to verify the change
+5. It reads the terminal output
+6. If there is an error, it reads the error and fixes it — without being asked
+7. It reports back to you
+
+Steps 4–6 are what make it an **agent**, not a chatbot. It takes actions and observes results. You do not copy and paste anything.
+
+---
+
+## This means your job changed
+
+Because Claude Code takes real actions:
+
+- Changes happen to your actual files, immediately
+- A bad prompt can cause a large, fast change that is hard to untangle
+- You need a way to undo — quickly and reliably
+
+Enter: **Git**.
+
+Git is a version control system. It saves snapshots of your code over time. Each snapshot is a **commit**.
+
+Before every significant Claude Code task: commit.
+After every Claude Code task: review, then commit again if it worked.
+
+If something goes wrong, you roll back to the last good commit.
+
+---
+
+## Git: commits as save states
+
+Think of Git the way you think about saving a game.
+
+You are about to fight a difficult boss. You save first. You lose. You load the save and try again.
+
+In code:
+```bash
+git add .
+git commit -m "Working version before adding login feature"
 ```
 
-`assert` means: "I am asserting this is true. If it is not, crash loudly and tell me."
+Now you ask Claude Code to add login. It goes wrong. You undo:
+```bash
+git checkout -- .
+```
 
-That crash is good news — it caught a bug before you ran the tool on your real data.
+This restores every file to its state at the last commit. The bad changes are gone.
+
+No more "I can't remember what it looked like before" or "I accidentally deleted something that was working."
 
 ---
 
-## Why Tests Matter *Especially* with AI
-
-Every time you ask the AI to change your code, you take a small risk: the change might fix one thing and silently break another.
-
-Without tests: you find out when the tool gives wrong results on real data — possibly too late.
-
-With tests: you find out in 3 seconds, on your laptop, before anything matters.
-
-**Tests are your regression net.** They catch the AI making something worse while trying to make something better.
-
----
-
-## Three Kinds of Tests You Will Write
-
-**1. Normal case** — does it work on typical input?
-```python
-total, top = count_words("hello world hello")
-assert total == 3
-```
-
-**2. Edge case** — what about unusual input?
-```python
-total, top = count_words("")        # empty string
-assert total == 0
-```
-
-**3. Known-wrong case** — does it reject bad input gracefully?
-```python
-# What if the file doesn't exist?
-# The program should print an error, not crash with a traceback
-```
-
----
-
-## Reading a Traceback
-
-Python tracebacks look scary. They are not.
-
-```
-Traceback (most recent call last):
-  File "word_counter.py", line 28, in main
-    total, top = count_words(text)
-  File "word_counter.py", line 17, in count_words
-    words = re.findall(pattern, text.lower())
-TypeError: expected string or bytes-like object
-```
-
-**Read from the bottom:**
-1. Last line = the error type and message
-2. Line above it = the exact file and line number where it broke
-3. Lines above that = how you got there (usually less important)
-
-The fix is almost always on the line Python points to.
-
----
-
-## The Debug Loop
-
-```
-Run the code (or tests)
-       ↓
-Read the error — note file name, line number, error type
-       ↓
-Copy: the error message + the relevant function + the test
-       ↓
-Paste to AI: "I got this error. Here is the code. What is wrong?"
-       ↓
-Apply the fix
-       ↓
-Run again
-       ↓
-Repeat (usually 1–3 loops)
-```
-
-If you are still stuck after 5 loops, ask the AI to explain the function from scratch — sometimes the bug is in your mental model.
-
----
-
-## What to Send the AI When Debugging
-
-**Don't send:** "It doesn't work."
-
-**Do send:**
-
-> "I got this error when running my tests:
->
-> ```
-> TypeError: expected string or bytes-like object
->   File "word_counter.py", line 17, in count_words
-> ```
->
-> Here is the `count_words` function:
-> ```python
-> [paste the function]
-> ```
->
-> What is wrong and how do I fix it?"
-
-More context = faster fix. The AI cannot see your screen.
-
----
-
-## Demo: Catching a Bug with a Test
-
-*Watch me work through one bug in `buggy_word_counter.py` live.*
-
-Steps:
-1. Run `python -m pytest test_word_counter.py -v`
-2. Read the first failure carefully
-3. Find the relevant line in `buggy_word_counter.py`
-4. Ask the AI what is wrong
-5. Apply the fix
-6. Run tests again
-
----
-
-## `pytest` in 60 Seconds
-
-`pytest` is a tool that automatically finds and runs all your tests.
+## The four Git commands you actually need
 
 ```bash
-pip install pytest                        # install once
-python -m pytest test_word_counter.py -v  # run tests, verbose output
+git status
 ```
+Shows which files have changed since the last commit. Run this often.
 
-Output you want to see:
+```bash
+git add .
+git commit -m "A short description of what changed"
 ```
-test_word_counter.py::test_total_count PASSED
-test_word_counter.py::test_top_words   PASSED
-2 passed in 0.04s
-```
+Saves a snapshot. The message should be specific: "Fix: delete button crashes on empty list" not "update code."
 
-Output you want to investigate:
+```bash
+git push
 ```
-test_word_counter.py::test_empty_string FAILED
-```
+Uploads your commits to GitHub. Run this at the end of every session.
 
-Green = good. Red = a bug (or a wrong test). Both are useful.
+```bash
+git log --oneline
+```
+Shows your commit history. Each line is one save state you can go back to.
 
 ---
 
-## Lab Overview (45 min)
+## The bug description formula
 
-| Time | Activity |
-|------|----------|
-| 0–10 min | Part 1: Run existing tests, read failures |
-| 10–30 min | Part 2: Debug the three bugs with AI help |
-| 30–40 min | Part 3: Write the missing tests (# TODO sections) |
-| 40–45 min | Part 4: Break it on purpose, watch tests catch it |
+The single most important skill for AI-assisted debugging.
 
-Starter files in `starter/`:
-- `buggy_word_counter.py` — has 3 deliberate bugs (all in `count_words`)
-- `test_word_counter.py` — tests to run, plus TODOs for you to complete
+**Weak:** "It doesn't work."
+Claude Code will guess. Slowly.
 
----
+**Formula:**
+> "When I [do X], I expect [Y], but I get [Z]."
 
-## Key Takeaways
+Include:
+- The exact steps you took
+- The exact behavior you expected
+- The exact error message (copy-paste the whole thing)
+- The relevant code section (ask Claude Code: "what code is responsible for this?")
 
-1. **Tests = inputs + expected outputs** — simple assertions, not magic
-2. **Tests catch AI regressions** — every time you change code, run the tests
-3. **Read tracebacks bottom-up** — last line is the error, the line above it is where
-4. **Give the AI context** — error message + relevant function = fast fix
-5. **The debug loop is normal** — 2–3 cycles is typical, not a sign of failure
+**Strong:** "When I click Delete on the last item in my notes list, I expect the item to be removed. Instead, I get this error on line 47: `IndexError: list index out of range`. Here is the delete function: [paste it]."
+
+One precise bug report. One fix. No back-and-forth.
 
 ---
 
-## Before Next Week
+## The break-fix loop
 
-- Save your fixed `word_counter.py` somewhere easy to find
-- Think about your tool from Week 2: what are two inputs that might break it?
-- Install `git` if you have not already (instructions in Week 5 README)
+The best way to get good at debugging is to do it on purpose.
 
-**Next session:** Feb 16 — Version control with Git and GitHub
+**The loop:**
+1. Make a clean Git commit (your safe state)
+2. Give Claude Code a bad prompt — vague, contradictory, or too ambitious
+3. Watch it break
+4. Read the error message
+5. Write a precise bug description using the formula
+6. Give it to Claude Code
+7. Verify the fix works
+8. Commit the fixed version
+
+Why this works: you are practicing error reading and precise description in a safe context where you know exactly what you broke and why. That is very different from encountering a mysterious bug you did not cause.
+
+---
+
+## Demo: the bug description formula in action
+
+*[Live demo — instructor walks through:]*
+
+1. Show a working app with a clean Git commit
+2. Give Claude Code a vague, bad prompt
+3. Watch it break (show the error)
+4. Fill out `starter/bug_description_template.md`
+5. Give the precise description to Claude Code
+6. Watch it fix the bug in one pass
+7. Commit the fix: `git commit -m "Fix: [describe the fix]"`
+
+Key observation: the quality of the fix is directly proportional to the quality of the bug description.
+
+---
+
+## Lab overview
+
+**What you are doing today (65 min)**
+
+| Part | Time | What you do |
+|---|---|---|
+| Part 1 | 20 min | Git setup: init, .gitignore, first commit, push to GitHub |
+| Guest: Steve | 45 min | Practitioner talk on AI in real software projects |
+| Part 2 | 25 min | Break your Project 1 app on purpose; fix it using the bug description formula; commit |
+
+Templates in `starter/`: `bug_description_template.md`
+
+---
+
+## Guest Speaker: Steve
+
+Steve builds software for a living and uses AI coding tools every day. Tonight he will share:
+- What his AI-assisted workflow actually looks like
+- Where AI tools genuinely save time
+- Where they require more human judgment than people expect
+- What he wishes he had understood earlier
+
+Steve will speak for approximately 45 minutes, followed by questions and the lab.
+
+---
+
+## Key takeaways
+
+- Claude Code is an agent — it takes real actions on your files, not just answers in a chat window
+- Commit before every significant change; this is your safety net
+- The bug description formula: "When I do X, I expect Y, but I get Z" — always include the exact error message
+- The break-fix loop builds debugging skills faster than waiting for real bugs
+- Four Git commands: `status`, `add + commit`, `push`, `log --oneline`
+
+---
+
+## Reading for next week
+
+**Before Wednesday, February 17:**
+
+1. *Beyond Vibe Coding* — Chapter 7 (~20 min). This chapter covers data persistence patterns and repo structure for AI-assisted projects.
+
+2. Stanford CS146S Week 4 notes at [themodernsoftware.dev/fall2025](https://themodernsoftware.dev/fall2025) (~10 min)
+
+**Also:** Think about what you want to build for Project 2. It will use SQLite and an external API. Come with a rough idea next week.

@@ -1,112 +1,81 @@
-"""Week 4 lab: tests for the word counter.
+"""
+Week 4: Manual test cases for the word counter.
 
-Run these with:
-    python -m pytest test_word_counter.py -v
+These are not automated pytest tests — they are plain-English assertions
+you verify by running the script and checking the output yourself.
 
-Some tests are already written for you.
-Find all sections marked # TODO and complete them.
+This is the human checklist approach from Week 3, applied to a command-line script.
 
-Import note: we import from buggy_word_counter so your fixes happen there.
-Once all bugs are fixed, this import should work without errors.
+How to use:
+1. Run each test below by hand (copy the command, paste it in your terminal)
+2. Compare the output to the expected result
+3. If it does not match, use bug_description_template.md to describe the bug
+4. Ask Claude Code to fix it
+
+After Week 4 you can optionally ask Claude Code to convert these into real pytest tests:
+    "Convert these manual test cases into pytest functions."
 """
 
-import pytest
-from buggy_word_counter import count_words
+# ============================================================
+# Test cases for buggy_word_counter.py
+# ============================================================
 
+# Test 1: Basic word count
+# Command: python buggy_word_counter.py sample.txt
+# Expected: Total words matches the number of space-separated words in sample.txt
+# How to verify: count the words in sample.txt manually (it is short enough)
 
-# ---------------------------------------------------------------------------
-# Tests that are already written — run these first to see what fails
-# ---------------------------------------------------------------------------
+# Test 2: Sentence counting with mixed punctuation
+# Create a file test_sentences.txt with this content:
+#   Hello world. How are you? I am great! Nice to meet you.
+# Command: python buggy_word_counter.py test_sentences.txt
+# Expected: Total sentences: 4
+# Actual (buggy): Total sentences: 2  (only counts periods, not ? and !)
 
-def test_total_word_count_simple():
-    """count_words should count all words in the input."""
-    total, _ = count_words("hello world foo bar")
-    assert total == 4, f"Expected 4 total words, got {total}"
+# Test 3: Top-N ordering
+# Command: python buggy_word_counter.py sample.txt --top 5
+# Expected: the MOST common words appear first (highest count at the top)
+# Actual (buggy): the LEAST common words appear first (output is reversed)
 
+# Test 4: Invalid --top argument
+# Command: python buggy_word_counter.py sample.txt --top 0
+# Expected: a clear error message: "Please specify a positive number for --top"
+# Actual (buggy): either returns all words or an empty list with no explanation
 
-def test_total_word_count_with_common_words():
-    """Common words (like 'the', 'and') count toward total but not top words."""
-    total, _ = count_words("the cat and the dog")
-    assert total == 5, f"Expected 5 total words, got {total}"
+# Test 5: File not found
+# Command: python buggy_word_counter.py nonexistent.txt
+# Expected: "Could not find the file: nonexistent.txt" and exit
+# This one should already work — verify it
 
+# Test 6: Empty file
+# Create empty.txt (an empty file)
+# Command: python buggy_word_counter.py empty.txt
+# Expected: "Total words: 0" and "No words found" (or similar)
+# Check whether the script handles this gracefully
 
-def test_common_words_excluded_from_top():
-    """Words like 'the', 'and', 'a' should NOT appear in the top-words list."""
-    _, top = count_words("the the the cat")
-    top_words = [word for word, _ in top]
-    assert "the" not in top_words, "'the' should be excluded from top words"
-    assert "cat" in top_words, "'cat' should appear in top words"
-
-
-def test_most_common_word_is_first():
-    """The word that appears most often should be first in the results."""
-    _, top = count_words("apple apple apple banana banana cherry")
-    assert top[0][0] == "apple", f"Expected 'apple' to be first, got '{top[0][0]}'"
-    assert top[0][1] == 3, f"Expected count 3 for 'apple', got {top[0][1]}"
-
-
-def test_returns_at_most_five_results():
-    """count_words should return at most 5 top words, even if there are more."""
-    # This string has 10 distinct meaningful words, each appearing twice
-    text = (
-        "apple apple banana banana cherry cherry "
-        "delta delta echo echo foxtrot foxtrot "
-        "golf golf hotel hotel india india"
-    )
-    _, top = count_words(text)
-    assert len(top) <= 5, f"Expected at most 5 results, got {len(top)}"
-
-
-def test_case_insensitive():
-    """'Hello' and 'hello' should be counted as the same word."""
-    _, top = count_words("Hello hello HELLO world")
-    top_words_with_counts = {word: count for word, count in top}
-    # After lowercasing, 'hello' should appear 3 times
-    assert "hello" in top_words_with_counts, "'hello' not found in top words"
-    assert top_words_with_counts["hello"] == 3, (
-        f"Expected 'hello' count to be 3, got {top_words_with_counts.get('hello')}"
-    )
-
-
-# ---------------------------------------------------------------------------
-# TODO: Complete these tests
-# ---------------------------------------------------------------------------
-
-def test_empty_string():
-    """count_words on an empty string should return 0 total and an empty list."""
-    # TODO: call count_words("") and assert:
-    #   - total == 0
-    #   - top is an empty list
-    pass  # replace this line with your assertions
-
-
-def test_string_with_only_common_words():
-    """If all words are common words, the top-words list should be empty."""
-    # TODO: call count_words with a string containing only words from COMMON_WORDS
-    # (e.g., "the and a of to in") and assert that top is an empty list
-    pass  # replace this line with your assertions
-
-
-def test_single_word():
-    """A single non-common word should appear in the results with count 1."""
-    # TODO: call count_words("python") and assert:
-    #   - total == 1
-    #   - top contains ("python", 1)
-    pass  # replace this line with your assertions
-
-
-def test_words_with_apostrophes():
-    """Words like "don't" and "it's" should be counted as single words."""
-    # TODO: call count_words("don't stop won't stop") and assert:
-    #   - total == 4
-    #   - either "don't" or "stop" appears in top (your choice which to check)
-    # Hint: if this test fails, it is related to Bug 1
-    pass  # replace this line with your assertions
-
-
-def test_punctuation_does_not_affect_count():
-    """Punctuation marks should not be counted as words or affect word counts."""
-    # TODO: these two inputs should produce the same total word count:
-    #   "hello, world." and "hello world"
-    # Call count_words on both and assert their totals are equal
-    pass  # replace this line with your assertions
+# ============================================================
+# How to create test files from the terminal
+# ============================================================
+#
+# Create test_sentences.txt:
+#   echo "Hello world. How are you? I am great! Nice to meet you." > test_sentences.txt
+#
+# Create empty.txt:
+#   touch empty.txt   (Mac/Linux)
+#   type nul > empty.txt   (Windows)
+#
+# ============================================================
+# Turning these into real automated tests (optional, Week 4+)
+# ============================================================
+#
+# After you fix the bugs, ask Claude Code:
+# "Convert the manual test cases in test_word_counter.py into real pytest functions
+#  that I can run with: pytest test_word_counter.py"
+#
+# Real pytest tests look like this:
+#
+# def test_sentence_count_mixed_punctuation():
+#     text = "Hello world. How are you? I am great! Nice to meet you."
+#     assert count_sentences(text) == 4
+#
+# pytest will run them all and tell you which pass and which fail.

@@ -1,232 +1,81 @@
-# Week 7: Small Agents and Web Services
+# Week 7: Agent Workflows & MCP
+**TECH 85 · March 3 · Stanford Continuing Studies**
 
-**Session:** Tue Mar 2, 2027, 7:00–8:30 pm PT
+## Session Goals
 
-## Goals
+- Use the plan-first workflow to give Claude Code complex multi-step tasks
+- Understand what MCP (Model Context Protocol) is and when it matters
+- Launch your Capstone project with a complete BRIEF.md and CLAUDE.md
 
-By the end of this session you will be able to:
+## Before Class
 
-- Explain what an API is and make a simple HTTP request with Python
-- Use the Anthropic API to call Claude programmatically (from code, not the browser)
-- Build a small "research helper" agent that retrieves information from the web and asks Claude to summarize it
+- Bring your Project 2 app — we will reference it when discussing agent workflows
+- Come with a Capstone idea. It can be ambitious. The prompt: "What is the most useful thing I could build?" The Capstone is your most significant project and should be something you are proud to show publicly.
+- Review the Week 6 reading (Chapters 9–10 of *Beyond Vibe Coding*) before class
 
----
+## Concepts (20 min)
 
-## Key Concepts
+- **Plan-first vs. prompt-first:** Prompt-first means throwing a big task at Claude Code and hoping it figures it out. It sometimes works for small tasks. For complex ones — "build me a multi-step tool that does X, Y, and Z" — it usually produces something partially wrong that is hard to untangle. Plan-first means asking Claude Code to write a plan first, before writing any code. You review the plan, edit it, and only then ask Claude Code to execute. This dramatically improves the output on complex tasks.
+- **Task decomposition:** Large tasks succeed when they are broken into small, well-defined pieces. "Build a research assistant that searches the web, summarizes the results, and saves them to a database" is three distinct tasks. Each one should be its own prompt, its own commit, its own verification step.
+- **MCP (Model Context Protocol):** A standard developed by Anthropic that lets AI agents connect to external tools and data sources. With MCP, Claude Code can access a database, search a specific corpus of documents, call a private API, or control a browser — not just the files in your project folder. You will not build an MCP server in this course, but you should understand what it is and when it applies.
+- **Skills vs. MCP:** In Claude Code's architecture, a "skill" is a reusable prompt or workflow pattern that the user defines. MCP is a protocol for giving agents access to external tools and data. Skills are about what you ask; MCP is about what Claude Code can access. When your project needs Claude Code to reach outside your files — to a database, an API, or a running service — that is an MCP use case.
 
-### What is an API?
+## Lab (65 min)
 
-API stands for "Application Programming Interface." It is a way for your code to talk to another program — often one running on someone else's server.
+### Part 1: Plan-first exercise (20 min)
 
-Think of it like a restaurant menu. You do not go into the kitchen and cook yourself. You look at the menu (the API documentation), place an order (send a request), and get back a meal (receive a response). You do not need to know how the kitchen works.
+Before our guest arrives, you will practice the plan-first workflow on a complex task.
 
-Almost every web service you use has an API: Google Maps, Spotify, Twitter, Wikipedia — they all let you request data with a simple HTTP call.
+1. Think of a complex feature you want to add to your project — something that would require three or more changes to different parts of your codebase.
+2. Give this task to Claude Code, but ask for a plan first, not code:
+   > "I want to [describe the complex feature]. Before you write any code, write a numbered plan of the steps you would take. Include: what files you will change, what new functions you will add, and what could go wrong. Do not write any code yet."
+3. Read the plan. Edit it if you see something wrong or missing. Add a step for error handling if it is not there.
+4. Then say: "Execute this plan, one step at a time. After each step, pause and tell me what you did before continuing."
+5. Compare the result to what you would have gotten from a single big prompt.
 
-### HTTP requests in Python
-
-```python
-import requests
-
-response = requests.get("https://en.wikipedia.org/api/rest_v1/page/summary/Python")
-data = response.json()
-print(data["extract"])   # prints a plain-English summary of the Python article
-```
-
-Two things to check after any request:
-- `response.status_code` — 200 means success; 404 means not found; 500 means server error
-- `response.json()` — the response body, parsed as a Python dictionary
-
-### The Anthropic API
-
-So far you have used Claude through the website. You can also call Claude from your own code. This is how AI-powered tools work.
-
-```python
-import anthropic
-
-client = anthropic.Anthropic()  # reads ANTHROPIC_API_KEY from environment
-
-message = client.messages.create(
-    model="claude-opus-4-5",
-    max_tokens=1024,
-    messages=[
-        {"role": "user", "content": "Explain photosynthesis in two sentences."}
-    ]
-)
-print(message.content[0].text)
-```
-
-Your API key authenticates you. **Never put your API key in code.** Put it in an environment variable.
-
-### Environment variables and `.env` files
-
-An environment variable is a named value that lives outside your code, in your shell. Programs read it without it appearing in any file you might accidentally share.
-
-```bash
-# Set it in your terminal (lasts until you close the terminal)
-export ANTHROPIC_API_KEY="sk-ant-..."   # Mac/Linux
-set ANTHROPIC_API_KEY=sk-ant-...       # Windows
-
-# Or save it permanently in a .env file and load it with python-dotenv
-```
-
-Your `.env` file:
-```
-ANTHROPIC_API_KEY=sk-ant-yourkey
-```
-
-Then in your Python code:
-```python
-from dotenv import load_dotenv
-load_dotenv()   # reads .env and sets environment variables
-```
-
-**Never commit `.env` to Git.** The `.gitignore` in this repo already excludes it.
-
-### What is an agent?
-
-An agent is a program that uses an AI model to decide what to do next, then takes an action, then looks at the result, and repeats. A simple agent loop:
-
-```
-User gives a question
-    ↓
-Agent searches Wikipedia for relevant content
-    ↓
-Agent sends the Wikipedia content + the question to Claude
-    ↓
-Claude generates a summary answer
-    ↓
-Agent returns the answer to the user
-```
-
-Today's lab builds exactly this loop.
+See `starter/research_agent_starter.py` for a complete example of the plan-first pattern applied to a research tool.
 
 ---
 
-## Setup Before Lab
+### Guest: Sai (~45 min)
 
-You need an Anthropic API key (from Week 6's "before next week" task).
+Sai works on agent systems in production. Tonight he will share:
+- How agents are actually used in real products — not demos, real usage
+- What the failure modes are (and they are different from what people expect)
+- Where he sees the field going in the next 12–18 months
 
-1. Set your API key as an environment variable:
-   ```bash
-   export ANTHROPIC_API_KEY="sk-ant-yourkey"  # Mac/Linux
-   set ANTHROPIC_API_KEY=sk-ant-yourkey       # Windows
-   ```
-   Or create a `.env` file in the starter folder:
-   ```
-   ANTHROPIC_API_KEY=sk-ant-yourkey
-   ```
-
-2. Install required libraries:
-   ```bash
-   pip install anthropic requests python-dotenv
-   ```
-
-3. Test your key:
-   ```python
-   import anthropic
-   client = anthropic.Anthropic()
-   print(client.messages.create(
-       model="claude-opus-4-5",
-       max_tokens=50,
-       messages=[{"role": "user", "content": "Say hello in one word."}]
-   ).content[0].text)
-   ```
-   If you see a one-word response, your key works.
+Come with questions. Specific ones tend to get better answers than general ones.
 
 ---
 
-## Lab: Build the Research Helper Agent
+### Part 2: Launch your Capstone (25 min)
 
-This lab uses `starter/research_agent_starter.py`. It has the structure and imports in place; your job is to fill in the three TODO sections.
+Your Capstone is your most ambitious project. The best Capstones from previous terms have been:
+- Personal productivity agents that automate a repetitive task
+- Data dashboards with live feeds that aggregate information from multiple sources
+- Domain-specific tools (for a field the student knows well) that a real person would actually use
 
-### Part 1 — Understand the structure (5 min)
+**Step 1:** Fill out `starter/capstone_BRIEF_template.md`. Take it seriously — your Capstone BRIEF should be more detailed than your Project 1 or 2 BRIEF. Include the "What makes this portfolio-worthy?" section.
 
-1. Open `starter/research_agent_starter.py` in VS Code.
-2. Read the file top to bottom — do not worry about parts you do not understand. Answer:
-   - What are the three functions?
-   - What does each function's docstring say it should do?
-   - Which function calls the Wikipedia API? Which calls the Anthropic API?
+**Step 2:** Give your completed Capstone BRIEF to Claude Code and ask it to scaffold the project:
+> "Read this BRIEF.md and create a project structure for my Capstone. Include: app.py, db.py (if needed), requirements.txt, a CLAUDE.md, and a schema.sql (if there is a database). Do not build the full app yet — just the skeleton with placeholder functions and comments."
 
-### Part 2 — Implement the Wikipedia search (15 min)
+**Step 3:** Review the scaffold. Make sure it matches your vision. Ask Claude Code to explain anything that surprises you.
 
-3. Find `# TODO 1` in the file. You need to implement `search_wikipedia(query)`.
+**Step 4:** Commit the scaffold with a clear message:
+```
+git commit -m "Capstone launch: scaffold from BRIEF.md"
+```
 
-4. Ask Claude to help you:
-   > "I need to implement a Python function that takes a search query string and uses the Wikipedia REST API to return a plain-text summary of the most relevant article. The API endpoint is: `https://en.wikipedia.org/api/rest_v1/page/summary/{title}` where {title} is the URL-encoded search term. The function should return the 'extract' field from the JSON response, or a default message if nothing is found. Use the requests library."
+## Project Milestone
 
-5. Paste the implementation into the TODO 1 section.
+**Capstone launched.** Submit to Canvas:
+1. Your completed Capstone BRIEF.md
+2. A link to your Capstone GitHub repository (even if it is just a scaffold)
+3. One sentence: what makes this your most ambitious project so far
 
-6. Test it in isolation:
-   ```python
-   # Add this temporarily at the bottom of the file to test
-   print(search_wikipedia("photosynthesis"))
-   print(search_wikipedia("quantum computing"))
-   ```
-   Run the file: `python research_agent_starter.py`.
-   You should see Wikipedia summaries. Remove the test lines when done.
+## Reading for Next Week
 
-### Part 3 — Implement the Claude summarizer (15 min)
+1. "Vibe Coding in Practice: Motivations, Challenges, and a Future" — ICSE 2026. Posted on Canvas. (~20 min). We will discuss this paper in Week 8's ethics segment. Note: this paper is academic but readable. Read for the main arguments, not the statistics.
 
-7. Find `# TODO 2`. Implement `summarize_with_claude(question, context)`.
-
-8. Ask Claude to help:
-   > "I need a Python function that takes a question string and a context string (text from Wikipedia), and uses the Anthropic API to return a concise answer. The function should send a message to claude-opus-4-5 asking it to answer the question using only the provided context, in 2-3 sentences. Use the anthropic library. Assume ANTHROPIC_API_KEY is set as an environment variable."
-
-9. Paste the implementation into the TODO 2 section.
-
-10. Test the full agent by running:
-    ```bash
-    python research_agent_starter.py "What is machine learning?"
-    python research_agent_starter.py "Who invented the telephone?"
-    ```
-    You should get short, accurate answers.
-
-### Part 4 — Add one improvement (10 min)
-
-11. Find `# TODO 3`. Add one feature of your choice. Ideas:
-    - Print the Wikipedia article title and URL along with the answer
-    - Let the user ask follow-up questions in a loop (keep asking until they type "quit")
-    - Save the question and answer to a log file with a timestamp
-
-12. Ask the AI to implement your chosen feature, then test it.
-
----
-
-## Expected Outputs
-
-By the end of lab you should have:
-
-- A working `research_agent_starter.py` that answers questions using Wikipedia + Claude
-- At least two successful queries demonstrated in your terminal
-- One additional feature implemented (TODO 3)
-
----
-
-## If Something Goes Wrong
-
-| Problem | What to do |
-|---|---|
-| `AuthenticationError` | Your API key is wrong or not set. Run `echo $ANTHROPIC_API_KEY` (Mac) or `echo %ANTHROPIC_API_KEY%` (Windows) to check. |
-| `ModuleNotFoundError: No module named 'anthropic'` | Run `pip install anthropic` inside your virtual environment |
-| Wikipedia returns empty or unhelpful content | The search title needs to match Wikipedia's article naming. Try more specific or differently-phrased queries |
-| Claude gives a very short or unhelpful answer | The context might be too short. Print `len(context)` and check if Wikipedia returned anything useful |
-| `RateLimitError` | You have made too many API calls. Wait 30 seconds and try again |
-
----
-
-## Before Next Week — Final Session
-
-Week 8 is the last session: evaluation and project showcase.
-
-**Prepare a 3-minute demo of your project.** You can show any tool you built or improved during this course. Plan to:
-1. State in one sentence what your tool does
-2. Show it running on a real input
-3. Describe one thing that works well and one thing you would improve
-
-There is no grade — just a chance to show what you built.
-
-Also: make sure your project is working and committed to GitHub before class.
-
-## Slides
-
-See `slides.md` in this folder (also posted in Canvas).
+2. Anthropic's Claude Code documentation on MCP at [docs.anthropic.com/claude-code](https://docs.anthropic.com/claude-code) (~10 min). Skim the MCP section. You now have enough context to understand what the docs are describing.

@@ -6,218 +6,230 @@ footer: "TECH 85 · Week 7 · Stanford Continuing Studies"
 ---
 
 <!-- _class: lead -->
-# Week 7: Small Agents and Web Services
+# Week 7: Agent Workflows & MCP
 ### TECH 85: Vibe Coding
-Stanford Continuing Studies · Mar 2, 2027
+Stanford Continuing Studies · March 3
 
 ---
 
 ## Agenda
 
-1. What an API is (and the restaurant analogy)
-2. Making HTTP requests in Python
-3. The Anthropic API: calling Claude from code
-4. Environment variables and API key safety
-5. What "agent" means
-6. Demo: building the research helper live
-7. Lab: fill in the three TODOs
+1. Recap: Project 2 and security
+2. Prompt-first vs. plan-first
+3. Task decomposition in practice
+4. The agent loop revisited — what changed
+5. What MCP is and why it matters
+6. Skills vs. MCP: a decision tree
+7. Lab Part 1: plan-first exercise
+8. Guest Speaker: Sai
+9. Capstone launch
 
 ---
 
-## Up to Now
+## Recap: six weeks in
 
-Everything you have built reads files from your own computer and prints results.
+Look at what you have built:
 
-Today we connect to the outside world:
-- Wikipedia API — fetch information from the web
-- Anthropic API — call Claude from your code (not the browser)
+- **Project 1:** A personal Streamlit tool deployed at a real public URL
+- **Project 2:** A data-connected app with SQLite and an external API
 
-By the end of this session you will have a tool that *goes out and gets information*, then *thinks about it*, then *gives you an answer*. That is an agent.
+You understand the agent loop. You write CLAUDE.md files. You use Git checkpoints. You handle API keys safely.
 
----
+This week: you use everything you have learned on your most ambitious project yet.
 
-## What Is an API?
-
-**API = Application Programming Interface**
-
-The restaurant analogy:
-- You do not go into the kitchen and cook
-- You look at the menu (the documentation)
-- You place an order (send a request)
-- You receive the food (get a response)
-
-Every major web service has an API: maps, weather, Wikipedia, Spotify, Google Translate, Anthropic. They all follow the same basic pattern.
+But first: a better way to give Claude Code complex tasks.
 
 ---
 
-## HTTP Requests in Plain English
+## The problem with big prompts
 
-Your browser makes HTTP requests all day long — every time you load a page.
+You have probably run into this.
 
-Your code can do the same:
+You give Claude Code a large, complex task. It builds something. It runs. But it is 80% right and 20% wrong in ways that are hard to fix because the problem is spread across many files.
 
-```python
-import requests
+Why this happens: Claude Code is executing step by step. When it gets to step 4, it has already made assumptions in steps 1–3 that constrain what is possible. Without a plan, those assumptions go unreviewed.
 
-# GET means "give me information"
-response = requests.get("https://en.wikipedia.org/api/rest_v1/page/summary/Python")
+The fix: **ask for the plan before asking for the code.**
 
-# Check if it worked
-print(response.status_code)   # 200 = success, 404 = not found
+---
 
-# Get the response data
-data = response.json()
-print(data["extract"])        # the plain-English Wikipedia summary
+## Plan-first: the difference in practice
+
+**Prompt-first:**
+> "Build a research assistant that searches the web, summarizes results, and saves them to my database."
+
+Claude Code starts building. Maybe it gets it right. Often it builds the wrong thing and you cannot easily tell why.
+
+**Plan-first:**
+> "I want to build a research assistant that searches the web, summarizes results, and saves them to my database. Before you write any code, write a numbered plan. Include: what files you will create or modify, what each function will do, and what could go wrong at each step."
+
+You read the plan. You catch the wrong assumption in step 2 before any code is written. You edit the plan. Then you execute.
+
+One plan review saves hours of debugging.
+
+---
+
+## What a good plan looks like
+
+When you ask Claude Code for a plan, you want to see:
+
+1. A numbered list of steps in the right order
+2. For each step: which file is being changed and what the change is
+3. A "what could go wrong" note on any step that touches external services or complex logic
+4. A list of new functions that will be added
+5. How the steps connect — what each step depends on
+
+A plan that is too short (3 steps for a complex feature) means Claude Code has not thought it through. Ask: *"This seems too simple for what I described. Add more detail for steps 2 and 3."*
+
+A plan that is too long may be over-engineering. Ask: *"Can we simplify this? I want the simplest possible version that works."*
+
+---
+
+## Task decomposition in practice
+
+"Build a research assistant" is not a task. It is a project. Break it down.
+
+**Level 1 (too big):**
+> "Build a research assistant that searches the web, summarizes, and saves."
+
+**Level 2 (three tasks):**
+1. "Add a web search function using the DuckDuckGo API. Test it with three search queries."
+2. "Add a summarization function that takes a list of search results and returns a 3-sentence summary. Test it with sample data."
+3. "Add a `research_log` table to SQLite and save each search + summary. Test that entries persist."
+
+**Each task is a commit.** One commit per working step. Roll back is easy. Progress is visible.
+
+---
+
+## The agent loop revisited
+
+In Week 1 you learned the basic loop:
+```
+Model → Harness → Tools → Result → Repeat
 ```
 
-That is it. Two lines to get information from the internet.
+By Week 7, you understand the nuances:
+
+- The **model** reasons better when it has a plan to follow
+- The **harness** (Claude Code) maintains context across steps — but that context has limits
+- The **tools** are only as useful as your instructions about when to use them
+- The **result** needs to be reviewed before the next step
+
+The big change: you are not just giving tasks. You are collaborating on a plan, then supervising an execution. That is the professional workflow.
 
 ---
 
-## The Anthropic API
+## What MCP is
 
-Claude lives on Anthropic's servers. Your code can talk to it.
+**MCP = Model Context Protocol**
 
-```python
-import anthropic
+A standard from Anthropic that defines how AI agents connect to external tools and data sources.
 
-client = anthropic.Anthropic()   # reads API key from ANTHROPIC_API_KEY env var
+Without MCP: Claude Code can only see the files in your project folder. It writes code that calls APIs — but it cannot actually run those APIs itself.
 
-message = client.messages.create(
-    model="claude-opus-4-5",
-    max_tokens=1024,
-    messages=[
-        {"role": "user", "content": "Explain photosynthesis in two sentences."}
-    ]
-)
+With MCP: Claude Code can directly access a database, search a document corpus, call a private API, or control a browser — and get real results back in the same session.
 
-print(message.content[0].text)
-```
-
-This is exactly what Claude.ai does under the hood — it is just a call to this same API.
+Think of it as expanding the **Tools** part of the agent loop. Instead of just file operations and terminal commands, the agent gains access to any tool that has an MCP server.
 
 ---
 
-## API Keys: The Rule
+## MCP in practice
 
-> **Never put your API key in a code file.**
+You will not build an MCP server in this course. But you should know what they look like.
 
-If you commit it to GitHub, anyone can find it and use your account.
+An MCP server is a small program that exposes a set of **tools** to an AI agent. For example:
 
-**The right way — environment variable:**
-```bash
-# Mac/Linux (in terminal)
-export ANTHROPIC_API_KEY="sk-ant-your-key-here"
+- A SQLite MCP server lets Claude Code run SQL queries against your database directly
+- A web browser MCP server lets Claude Code actually browse URLs and read content
+- A Slack MCP server lets Claude Code send and read messages in your workspace
 
-# Windows (in terminal)
-set ANTHROPIC_API_KEY=sk-ant-your-key-here
-```
+When you use Claude Code and it reads a file or runs a command, that is a built-in tool. MCP extends this to custom, domain-specific tools.
 
-**Or use a `.env` file** (already listed in `.gitignore`):
-```
-ANTHROPIC_API_KEY=sk-ant-your-key-here
-```
-
-```python
-from dotenv import load_dotenv
-load_dotenv()   # reads .env, sets env vars
-```
+For more: [docs.anthropic.com/claude-code](https://docs.anthropic.com/claude-code) → MCP section.
 
 ---
 
-## What Is an Agent?
-
-An agent is a program that uses an AI model to take multi-step actions.
-
-The simplest agent loop:
+## Skills vs. MCP: a decision tree
 
 ```
-User asks a question
-       ↓
-Agent fetches relevant information (e.g., Wikipedia)
-       ↓
-Agent sends information + question to Claude
-       ↓
-Claude generates an answer
-       ↓
-Agent returns the answer to the user
+You want Claude Code to...
+         |
+         ├── Follow a specific workflow you define?
+         │   → Use a Skill (a reusable prompt or workflow pattern)
+         │
+         └── Access data or tools outside your project folder?
+             |
+             ├── A public API (weather, news, etc.)?
+             │   → Your code calls the API; Claude Code writes the code
+             │
+             └── A custom tool, database, or private service?
+                 → MCP (define an MCP server that exposes the tool)
 ```
 
-"Agent" sounds futuristic. The reality is: it is just a loop where the AI decides what to do next based on what it sees.
+For this course: skills and direct API calls cover everything. MCP is the next step when you are building agent systems that need to reach into custom infrastructure.
 
 ---
 
-## Today's Agent: The Research Helper
+## Demo: plan-first workflow
 
-```python
-def research_helper(question: str) -> str:
-    # Step 1: search Wikipedia
-    context = search_wikipedia(question)
+*[Live demo — instructor walks through:]*
 
-    # Step 2: ask Claude to answer using that context
-    answer = summarize_with_claude(question, context)
+1. Show a working app with a feature request
+2. Give Claude Code the feature request — ask for a plan, not code
+3. Read the plan with the class — find one thing to change
+4. Approve the edited plan
+5. Execute: "Execute this plan one step at a time. Pause after each step."
+6. Watch Claude Code work through the steps
+7. Commit at each step: `git commit -m "Plan step 2: add summary function"`
 
-    return answer
-```
-
-Three functions:
-1. `search_wikipedia(query)` — hit the Wikipedia API, return the summary text
-2. `summarize_with_claude(question, context)` — call the Anthropic API, get a clean answer
-3. `main()` — read the question from command line, call the above, print the result
-
-You implement functions 1 and 2 in the lab.
+Key observation: the plan acts as a shared understanding. You both know what the goal is and how you are getting there.
 
 ---
 
-## Demo: Building It Live
+## Lab overview
 
-*Watch me fill in TODO 1 and TODO 2 in `research_agent_starter.py`.*
+**What you are doing today (65 min)**
 
-1. Open the starter file — read the structure
-2. Ask Claude to implement `search_wikipedia`
-3. Test it: `python research_agent_starter.py "photosynthesis"`
-4. Ask Claude to implement `summarize_with_claude`
-5. Test the full pipeline: `python research_agent_starter.py "Who invented the internet?"`
-6. Add one small feature (TODO 3)
+| Part | Time | What you do |
+|---|---|---|
+| Part 1 | 20 min | Plan-first exercise: give Claude Code a complex task, ask for a plan first |
+| Guest: Sai | 45 min | Agent systems in production |
+| Part 2 | 25 min | Launch Capstone: fill out capstone_BRIEF_template.md, scaffold the project |
 
----
-
-## Lab Overview (45 min)
-
-| Time | Activity |
-|------|----------|
-| 0–5 min | Part 1: Read the starter file structure |
-| 5–20 min | Part 2: Implement Wikipedia search (TODO 1) |
-| 20–35 min | Part 3: Implement Claude summarizer (TODO 2) |
-| 35–45 min | Part 4: Add one improvement (TODO 3) |
-
-Setup needed before starting:
-```bash
-pip install anthropic requests python-dotenv
-export ANTHROPIC_API_KEY="your-key-here"
-```
+Reference files in `starter/`: `research_agent_starter.py`, `capstone_BRIEF_template.md`
 
 ---
 
-## Key Takeaways
+## Guest Speaker: Sai
 
-1. **APIs are just HTTP requests** — send a request, receive data, parse JSON
-2. **The Anthropic API is Claude** — calling it from code is exactly like using claude.ai, but automated
-3. **Environment variables keep keys safe** — never hardcode API keys in files you might share
-4. **Agent = LLM + action loop** — fetch context, send to model, return answer
-5. **This pattern scales** — swap Wikipedia for any data source; swap the task for any question
+Sai builds agent-powered systems for real products — not research demos, but systems that people use every day.
+
+Tonight he will cover:
+- What "agent workflow" means in a production context
+- The failure modes that catch teams off guard
+- How he evaluates whether an agent is reliable enough to ship
+- Where he sees this field going in the next 12–18 months
+
+Sai will speak for approximately 45 minutes, followed by the Capstone launch lab.
 
 ---
 
-## Before Next Week (Final Session!)
+## Key takeaways
 
-Week 8 is the last session: evaluation and showcase.
+- Plan-first before complex tasks: ask for the plan, review it, then execute
+- Task decomposition: large tasks succeed when broken into small, well-defined pieces with one commit per step
+- MCP extends Claude Code's tool access beyond your project folder — to databases, browsers, custom services
+- Skills are reusable workflow patterns; MCP is infrastructure for agent tool access
+- The Capstone is your most ambitious project — write a detailed BRIEF
 
-**Prepare a 3-minute demo of your best work from this course.** Plan:
-1. One sentence: what does your tool do?
-2. Live demo: show it running on a real input
-3. One thing that works well, one thing you would do next
+---
 
-Bring your laptop, make sure the tool runs.
+## Reading for next week
 
-**Next session:** Mar 9 — Evaluating AI-built software and final showcase
+**Before Wednesday, March 10 (Demo Day):**
+
+1. "Vibe Coding in Practice: Motivations, Challenges, and a Future" — ICSE 2026 (~20 min). Posted on Canvas. Read the abstract, introduction, and conclusion at minimum.
+
+2. Anthropic Claude Code MCP docs at [docs.anthropic.com/claude-code](https://docs.anthropic.com/claude-code) (~10 min)
+
+**Also:** Make significant progress on your Capstone this week. Demo Day is next Wednesday. You have 3 minutes to show something real.

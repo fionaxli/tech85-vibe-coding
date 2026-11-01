@@ -1,111 +1,84 @@
-# 3-Minute Demo Presentation Guide
+# Capstone Demo Prep Guide
 
-**Student:** [Your name]
-**Tool:** [Name of your tool]
-**Date:** Mar 9, 2027 · TECH 85 Week 8
+You have exactly 4 minutes: 3 to demo, 1 for questions.
 
----
-
-## Structure (stick to this; 3 minutes goes fast)
-
-| Time | Section |
-|------|---------|
-| 0:00 – 0:30 | What it is and who it is for |
-| 0:30 – 2:00 | Live demo |
-| 2:00 – 3:00 | What works, one limitation, what's next |
+This guide helps you prepare. Practice your demo at least once before class.
 
 ---
 
-## Section 1: What Is It? (30 seconds)
+## Your 3-minute script
 
-Fill in this sentence and practice saying it out loud until it takes 5–8 seconds:
+Use this as a guide, not a word-for-word script. Speak naturally.
 
-> "I built a tool that ______________________________.
-> It is designed for ______________________________.
-> You use it by ______________________________."
+**[0:00–0:15] Open your live URL**
+Have your browser ready with the URL already loaded — do not waste time typing. Say:
+> "This is [your app name]. It is live at [your URL]."
 
-**Your version:**
+**[0:15–0:35] What it does**
+One sentence. Not the features list — what it *does* for a person.
+> "It lets me [do thing X] without having to [do annoying thing Y]."
 
->
+**[0:35–2:05] Demo the core feature**
+Do the thing. Do not explain it while you are doing it — show it, then narrate briefly.
+- Add an entry, or run a search, or trigger the agent, or whatever the core action is
+- Show the result
+- If it touches a database, show that the data persists (refresh the page)
+- Show the thing you are most proud of — one feature, clearly demonstrated
 
----
+**[2:05–2:35] One prompt you iterated on**
+Pick one place where you had to refine your direction to Claude Code.
+> "I originally asked Claude Code to [first attempt]. It built [what it built]. I realized that was wrong because [reason], so I asked it to [revised prompt]. The second version did [what worked]."
 
-## Section 2: The Live Demo (90 seconds)
+**[2:35–3:00] One bug you fixed + share the URL**
+> "The hardest bug was [describe the bug]. The error was [error message]. I described it to Claude Code as: 'When I [action], I expect [Y], but I get [Z].' It fixed it by [what it did]."
 
-**Input you will use:**
-
-> [Write out the exact input or file you will use in the demo. This should be something real — not "test" or "example."]
-
-**What the tool will produce:**
-
-> [Describe what the output should look like so you know if something goes wrong during the demo.]
-
-**Commands to run:**
-
-```bash
-# Write the exact commands you will type during the demo
-# Practice running these right now to make sure they work
-```
-
-**What to say while it runs:**
-
-> [Write 1–2 sentences explaining what is happening while the output appears.]
+Then: "You can try it at [URL]. I put the link in the Canvas thread."
 
 ---
 
-## Section 3: Takeaways (60 seconds)
+## What makes a good demo
 
-**One thing that works well:**
+**Good:**
+- You run the actual live app, not a video or screenshot
+- You do something real: type in a city, add an entry, run a query
+- You show something going right, and you explain what went into making it right
+- You are honest about what is not finished
 
-> [Be specific. "It handles edge cases" is vague. "It correctly skips empty lines without crashing" is specific.]
-
-**One known limitation:**
-
-> [Every tool has at least one. Stating yours honestly is a sign of good engineering judgment, not a failure.]
-
-**What you would do next:**
-
-> [If you had one more hour, what is the one concrete improvement you would make? Not "make it better" — what specifically?]
-
----
-
-## Preparation Checklist
-
-Work through this before class:
-
-- [ ] I have run the tool on my demo input in the last 24 hours and it worked
-- [ ] I know the exact commands to type (they are written above)
-- [ ] I have practiced saying Section 1 out loud and it takes under 30 seconds
-- [ ] My laptop is charged and the tool runs without an internet connection (or I know it needs internet)
-- [ ] If my tool uses an API key, the key is set as an environment variable right now
-- [ ] I have a backup plan if something goes wrong (e.g., a screenshot of working output)
+**Not great:**
+- Walking through the code in VS Code (demo the app, not the code)
+- Explaining features that are not implemented yet
+- Saying "it would also be able to..." (show what it does, not what it will do)
+- Reading from notes (it is 3 minutes — practice until you do not need them)
 
 ---
 
-## If Something Goes Wrong During the Demo
+## If your app has a bug right now
 
-**If the tool crashes:**
-> "It is crashing here because of [describe the issue]. What I would show you is [describe what normally happens]. I fixed a similar bug earlier — let me show you the fix."
+Demo what works. Say what does not work yet. Do not pretend.
 
-**If you forget what to say:**
-> Refer back to Section 1 and describe what the tool does. Then show the output.
+> "The API integration has a bug I did not finish fixing — but the core SQLite feature works, and I want to show you that."
 
-**If the output looks wrong:**
-> "This is actually a good example of a known limitation. What I expected was [describe expected]. This is something I would fix next."
+An honest demo of a partial project is better than a polished demo of a lie.
 
 ---
 
-## Notes for After the Demo
+## The one-minute Q&A
 
-After everyone has presented, jot down:
+One question from the class or instructor. Likely questions:
+- "How did you decide on [feature]?"
+- "What would you add if you had another week?"
+- "Did Claude Code ever do something that surprised you?"
+- "What is the most important thing it did NOT do well?"
 
-- One idea you got from someone else's tool:
-  >
-
-- One question you want to explore in your next project:
-  >
+"I don't know" is a fine answer. "I haven't thought about that — good question" is also fine.
 
 ---
 
-*Three minutes is short. Keep it focused and show something real.*
-*The audience wants to see a tool working — that is always more compelling than slides.*
+## Checklist: the night before Demo Day
+
+- [ ] My app is deployed and accessible at my Streamlit Cloud URL
+- [ ] I have tested the app today (not just last week) — sometimes deployed apps go to sleep
+- [ ] I have practiced the demo at least once, out loud, with a timer
+- [ ] I know my URL by heart (or have it copied somewhere I can access quickly)
+- [ ] My eval_scorecard.md is filled out
+- [ ] I have submitted my GitHub link and URL to Canvas

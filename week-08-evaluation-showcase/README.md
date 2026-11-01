@@ -1,155 +1,86 @@
-# Week 8: Evaluating AI-Built Software, and Final Showcase
+# Week 8: Demo Day
+**TECH 85 · March 10 · Stanford Continuing Studies**
 
-**Session:** Tue Mar 9, 2027, 7:00–8:30 pm PT
+## Session Goals
 
-## Goals
+- Evaluate your Capstone project against a test set you define
+- Understand the basics of LLM-as-a-judge evaluation
+- Demo your Capstone to the class in a 3-minute presentation
 
-By the end of this session you will be able to:
+## Before Class
 
-- Explain what evaluation means for an AI-built tool
-- Build a small test set and run it through your tool automatically
-- Use the "LLM-as-a-judge" pattern to grade your tool's outputs with Claude
-- Give a 3-minute demo of the tool you built during this course
+- Your Capstone must be deployed and accessible at a Streamlit Cloud URL
+- If something is broken, deploy what works — a partial app you understand is better than a complete app you cannot explain
+- Have your demo ready: you will open your live URL in front of the class and walk through it in exactly 3 minutes. Practice once.
+- Come having read the ICSE 2026 paper: "Vibe Coding in Practice: Motivations, Challenges, and a Future"
 
----
+## Session Structure
 
-## Key Concepts
-
-### What evaluation means
-
-Building a tool is not the same as knowing whether the tool is good. Evaluation answers the question: "For the inputs I care about, does my tool produce outputs that are correct and useful?"
-
-Evaluation has three parts:
-1. **A test set** — a collection of inputs and the correct answers for them
-2. **A way to run them** — a script that feeds each input to your tool and records the output
-3. **A way to grade them** — comparing outputs to expected answers, either by hand or with AI
-
-### Building a test set
-
-A test set does not need to be large. For a personal tool, 10–20 well-chosen test cases tell you a lot. Good test cases cover:
-
-- **Happy path** — typical inputs that should work
-- **Edge cases** — empty input, very long input, inputs with special characters
-- **Known failures** — inputs you already know cause problems (from Weeks 3–4)
-
-Your test set is just a list of input/expected-output pairs. You can store them in a Python list, a CSV, or a JSON file.
-
-### LLM-as-a-judge
-
-For some outputs — especially text summaries or open-ended answers — there is no single "correct" answer. Two summaries can both be good. You need a grader that understands nuance.
-
-The "LLM-as-a-judge" pattern uses Claude to grade your tool's outputs by giving it a rubric:
-
-```
-Prompt to Claude:
-"I am evaluating a summarization tool. Here is the input, the expected output,
-and the tool's actual output. On a scale of 1–5, rate the actual output on:
-accuracy, completeness, and conciseness. Explain your rating briefly."
-```
-
-This is not a perfect evaluation method. But it is useful, fast, and good enough for assessing a personal tool.
-
-### What "good enough" looks like
-
-You do not need a 100% pass rate. You need to understand where your tool works well and where it struggles. A useful evaluation report says:
-
-- "My tool handles the 8 standard test cases correctly."
-- "It fails on inputs with special characters — I know about this and it is a known limitation."
-- "The LLM judge rated its summaries an average of 4.1/5 on accuracy."
-
-This is more valuable than vague confidence that "the tool works."
-
----
-
-## Lab: Evaluate Your Tool and Prepare Your Demo
-
-This lab has two parts: evaluation (30 min) and demo prep (15 min).
-
-### Part 1 — Run the evaluation harness (30 min)
-
-You will run a mini-evaluation on the word counter from Week 1/4, or on your own tool from Week 2.
-
-#### 1a. Build a test set (10 min)
-
-1. Open `starter/eval_scorecard.md` and read the rubric.
-2. In `starter/eval_harness.py`, find the `TEST_CASES` list. It has 5 examples already — add at least 5 more based on inputs you have actually tried with your tool.
-   - If using the word counter: add test cases with edge-case inputs (empty string, all common words, very long text, text with numbers)
-   - If using your own tool: add inputs that cover your tool's range
-
-3. For each test case, fill in the `expected` field. This is what you would want the output to look like for a good tool. It does not have to be exact — for text outputs, write a description of what a good answer looks like.
-
-#### 1b. Run the harness (10 min)
-
-4. Make sure your Anthropic API key is set (from Week 7 setup).
-5. Run the eval harness:
-   ```bash
-   python eval_harness.py
-   ```
-6. The harness will run each test case through the function and use Claude to grade each output. A summary table will be printed and saved to `eval_results.txt`.
-
-7. Read the output. For any test case graded below 3/5, look at the input and output and ask: "What went wrong?"
-
-#### 1c. Fill in the scorecard (10 min)
-
-8. Open `starter/eval_scorecard.md` and complete every section. Use the eval harness results plus your own judgment.
-9. In the "What I would do next" section, write at least one concrete improvement you would make if you had more time.
-
-### Part 2 — Prepare your demo (15 min)
-
-Your demo should be exactly 3 minutes. Use `starter/presentation_template.md` as your guide.
-
-10. Open `presentation_template.md`. Fill in each section.
-11. Practice out loud once (yes, really — it makes a difference).
-12. Make sure your tool runs on your laptop without errors. Run it once right now to confirm.
-
-**Demo format:**
-- 30 seconds: what the tool does and who it is for
-- 90 seconds: live demo — show it running on a real input
-- 60 seconds: what works well, one limitation, what you would do next
-
-There is no grade on the demo. The goal is to share what you built.
-
----
-
-## Expected Outputs
-
-By the end of lab you should have:
-
-- A completed `eval_scorecard.md` with honest ratings
-- `eval_results.txt` showing output from the harness run
-- A filled-in `presentation_template.md` you can use to guide your demo
-- A live demo that runs without errors
-
----
-
-## If Something Goes Wrong
-
-| Problem | What to do |
+| Time | What happens |
 |---|---|
-| `eval_harness.py` crashes on import | Make sure the function you are testing is importable. Check the `FUNCTION_TO_TEST` variable at the top of the file. |
-| Claude's grades seem inconsistent | LLM-as-a-judge is not perfectly consistent — that is expected. Look at the reasoning, not just the number. |
-| Your tool crashes on one of the test inputs | Note it in your scorecard as a known failure and describe the input. Crashing on edge cases is normal at this stage. |
-| You have not finished your Week 2 tool | Use the word counter from Week 1 for the evaluation. Your demo can describe what you planned to build. |
-| You are nervous about the demo | That is also normal. Everyone in the room is in the same position. Focus on showing something real that works. |
+| 7:00–7:15 PM | Eval exercise: run eval_harness.py and fill out eval_scorecard.md |
+| 7:15–7:20 PM | Ethics / IP lightning talk (5 min) |
+| 7:20–8:25 PM | Capstone demos (3 min each + 1 min Q&A) |
+| 8:25–8:30 PM | Closing remarks |
 
----
+## Concepts (in the first 20 min)
 
-## Congratulations
+- **Evaluation:** A test set is a small collection of inputs with known correct outputs. You run your app on each input and check whether the output matches. This is how you know your tool is reliable, not just impressive in a demo.
+- **LLM-as-a-judge:** For tasks where "correct" is hard to define (summaries, recommendations, creative output), you can ask an LLM to evaluate the output. You give it the input, the output, and a rubric. It scores the output 1–5 and explains the score. This is called LLM-as-a-judge.
+- **AI ethics and IP:** When Claude Code generates code, who owns it? The short answer: you do. The longer answer depends on jurisdiction and the specific license terms of the tool you used. The general principle: if you directed the work, made meaningful decisions, and could explain it to a court, you have the stronger claim. The community norm: disclose that you used AI. The practical rule: if you cannot explain what the code does, you cannot defend it.
+- **The golden rules of vibe coding:** The distillation of 8 weeks of practice. See the slides.
+- **What is next:** Resources, community, and what this course was actually preparing you for.
 
-You have reached the end of TECH 85: Vibe Coding.
+## Lab (15 min before demos)
 
-Over eight weeks you have:
-- Built your first AI-assisted tool
-- Learned to write clear specs and prompts
-- Reviewed and run code safely
-- Written tests and debugged failures
-- Used version control with Git and GitHub
-- Worked with real-world data files
-- Built a web-connected agent
-- Evaluated your own tool's reliability
+### Run the evaluation harness
 
-These skills compound. Each project you build from here will be faster, cleaner, and more intentional than the last.
+1. Open `starter/eval_harness.py`. Read the comments — they explain how to adapt it to your Capstone.
+2. Define 5 test cases for your Capstone. Each test case is:
+   - An input (what the user does or types)
+   - An expected output (what the app should return or show)
+   - A pass/fail criterion (how you know it worked)
+3. Run the harness against your Capstone.
+4. Fill out `starter/eval_scorecard.md`.
 
-## Slides
+You do not need to pass all 5 tests. You need to have run them and know the results.
 
-See `slides.md` in this folder (also posted in Canvas).
+### Ethics lightning talk (5 min)
+
+The instructor will cover three questions:
+1. What does the law currently say about AI-generated code? (short version: complicated, jurisdiction-dependent, evolving)
+2. What does the community norm say? (disclose; be honest about what you built vs. what Claude built)
+3. What should you do? (build in public, be honest about the tools you use, keep learning)
+
+## Demo Format
+
+Each student has exactly 4 minutes: 3 minutes to demo, 1 minute for one question.
+
+**Your 3 minutes:**
+
+1. **Open your live URL** (15 sec) — go to your Streamlit Cloud URL in the browser
+2. **Tell us what it does** (20 sec) — one sentence, like you are describing it to a friend
+3. **Demo the core feature** (90 sec) — do the thing. Show the AI working. Show data persisting. Show the thing you are most proud of.
+4. **Tell us about one prompt you iterated on** (30 sec) — pick one place where you had to refine your direction to Claude Code. What did you ask? What went wrong? How did you fix it?
+5. **Tell us about one major bug you fixed** (25 sec) — the bug, the error, how you described it to Claude Code
+6. **Share the URL** (10 sec) — say your URL out loud and put it in the Canvas thread
+
+**The Q&A minute:** one question from the class or instructor. Answer honestly — "I don't know" is a fine answer.
+
+## What to Submit
+
+Submit to Canvas after class:
+1. Your live Capstone URL
+2. Your GitHub repository link
+3. Your completed eval_scorecard.md
+4. Three sentences: what you built, what you would add next, what surprised you most about this course
+
+## Reading for After the Course
+
+1. *Beyond Vibe Coding* — any chapters you have not yet read (~ongoing reference)
+
+2. Anthropic Claude Code documentation at [docs.anthropic.com/claude-code](https://docs.anthropic.com/claude-code) — the official reference; now that you know the tool, the docs are much more useful
+
+3. Stanford CS146S at [themodernsoftware.dev/fall2025](https://themodernsoftware.dev/fall2025) — the reference materials from a university course using similar tools
+
+4. GitHub's Copilot Labs and Claude Code release notes — this space moves fast; follow the official changelogs to know what is new

@@ -1,141 +1,109 @@
-# Week 4: Testing and Debugging with AI
+# Week 4: Claude Code + Git
+**TECH 85 · February 10 · Stanford Continuing Studies**
 
-**Session:** Tue Feb 9, 2027, 7:00–8:30 pm PT
+## Session Goals
 
-## Goals
+- Use Git to checkpoint your project before making risky AI-assisted changes
+- Describe bugs precisely so Claude Code can fix them quickly
+- Understand Claude Code as a full coding agent — not just a chat interface
 
-By the end of this session you will be able to:
+## Before Class
 
-- Write simple tests that verify a function produces the right output for a given input
-- Read a Python traceback and identify which line caused an error
-- Guide an AI assistant through the debug loop: run → read error → ask AI → fix → repeat
+- Install Git: open your terminal and type `git --version`. If you get a "command not found" error, install from [git-scm.com](https://git-scm.com) and restart your terminal.
+- Have a GitHub account (free at github.com). If you deployed last week, you already have one.
+- Bring your Project 1 project folder — we will add Git to it in the first lab block.
 
----
+## Concepts (20 min)
 
-## Key Concepts
+- **Claude Code as a full coding agent:** Claude Code is not a chatbot you paste code into. It reads your files, writes changes, runs your app to test them, reads the output, and decides what to do next — all without you copying and pasting anything. Understanding this loop changes how you use it: you give it a task, not a question.
+- **Describing bugs precisely:** The single most important skill for AI-assisted debugging. The formula: "When I do X, I expect Y, but I get Z." Include the exact error message if there is one. Vague bug reports ("it doesn't work") waste time; precise ones ("when I click Delete on the last item, I get an IndexError on line 47") solve in one round.
+- **Git as a checkpoint system for AI-generated code:** Git saves snapshots of your code. Think of each commit as a save state in a video game. Before you ask Claude Code to make a big change, commit. If the change makes things worse, you can roll back to the last good state with one command. This is especially important with AI-generated code because changes can be large and fast.
+- **The break-fix loop:** A powerful learning practice. Make a commit, intentionally introduce a bug (by giving Claude Code a bad prompt), observe the failure, then fix it. Doing this deliberately builds your bug-reading skills faster than waiting for bugs to appear on their own.
 
-### What is a test?
+## Lab (65 min)
 
-A test is a small piece of code that checks whether your tool does the right thing for a specific input. The idea is simple: you call a function with an input you know, and you check that the output matches what you expected.
+### Part 1: Git setup — init, commit, and push (20 min)
 
-```python
-# Example test: checking word_counter
-result_total, result_top = count_words("the cat sat on the mat")
-assert result_total == 6, f"Expected 6 words, got {result_total}"
-```
+We are doing this before our guest arrives so you have Git ready for the lab after.
 
-`assert` means: "I am asserting this is true. If it is not, stop and show me an error." That error message is your test failure — it tells you exactly what went wrong.
-
-### What tests are for
-
-Tests are not about finding bugs immediately. They are about confidence. When you write a test for behavior you care about, you can change the code later and run the test again to make sure you did not break it. This is especially important when using AI to make changes: the AI might fix one thing and accidentally break another.
-
-### Reading a traceback
-
-When Python crashes, it prints a "traceback" — a stack of function calls leading to the error. It looks frightening but always has the same structure:
-
-```
-Traceback (most recent call last):
-  File "word_counter.py", line 28, in main     ← where it was when things went wrong
-    total, top = count_words(text)
-  File "word_counter.py", line 17, in count_words  ← where the error actually is
-    words = re.findall(pattern, text.lower())
-TypeError: expected string or bytes-like object  ← the actual error message
-```
-
-**Read from bottom to top.** The last line is the error. The line above it is where in the code the error occurred. That is where you start.
-
-### The debug loop
-
-```
-1. Run the script (or the tests)
-2. Read the error message — note the line number and the error type
-3. Copy the error and relevant code, ask the AI:
-   "I got this error on line N. Here is the code. What is wrong and how do I fix it?"
-4. Apply the fix
-5. Run again
-6. Repeat until it passes
-```
-
-Most bugs are fixed in one or two loops. If you are on loop five and still stuck, ask the AI to explain the code from scratch — sometimes the bug is in your understanding, not the code.
-
----
-
-## Lab: Tests, Bugs, and Fixes
-
-This lab uses two starter files: `test_word_counter.py` (a test file with some tests written and some left for you) and `buggy_word_counter.py` (the word counter with three deliberate bugs). Your job is to find and fix all three bugs using the test suite and AI help.
-
-### Part 1 — Run the existing tests (10 min)
-
-1. Open `starter/test_word_counter.py` in VS Code.
-2. Read the tests that are already written (the ones that do not say `# TODO`). For each one, answer in your head: "What input is this testing? What output am I expecting?"
-3. Open a terminal. Activate your virtual environment if you have one, or just use your normal Python:
-   ```bash
-   cd /path/to/week-04-testing-debugging/starter
-   python -m pytest test_word_counter.py -v
+1. Open your terminal and navigate to your Project 1 folder.
+2. Initialize Git:
    ```
-   If `pytest` is not installed:
-   ```bash
-   pip install pytest
+   git init
+   git branch -M main
    ```
-4. Read the output. Some tests will pass (shown with a green dot or `PASSED`). Some will fail. Note which ones fail.
+3. Create a `.gitignore` file. Ask Claude Code:
+   > "Create a .gitignore file for a Python Streamlit project. Include: .env, __pycache__, *.db, .DS_Store, and any other common Python ignores."
+4. Stage and commit your files:
+   ```
+   git add .
+   git commit -m "Initial commit: Project 1 working version"
+   ```
+5. Create a new repository on GitHub (github.com → New repository). Copy the remote URL.
+6. Push to GitHub:
+   ```
+   git remote add origin https://github.com/yourusername/your-repo.git
+   git push -u origin main
+   ```
+7. Refresh the GitHub page and confirm your files are there.
 
-   **If you see `ImportError: cannot import name 'count_words'`**, make sure both files are in the same folder.
-
-### Part 2 — Read the failures and debug (20 min)
-
-5. For each failing test, find the corresponding line in `buggy_word_counter.py`.
-6. Copy the failing test output (the full error message), the test code, and the relevant function from `buggy_word_counter.py`. Paste all three into Claude and ask:
-   > "This test is failing with this error. Here is the test code and the function it is testing. What is the bug and how do I fix it?"
-
-7. Apply the fix to `buggy_word_counter.py`. Run the tests again.
-8. Repeat until all existing tests pass.
-
-   There are three deliberate bugs. Hint: they are all in `count_words()`. You do not need to modify `main()`.
-
-### Part 3 — Write the missing tests (10 min)
-
-9. In `test_word_counter.py`, find all the sections marked `# TODO`. Complete each one.
-10. Run the tests again after each new test you add. If a new test fails, debug it the same way as before.
-11. When all tests pass (including your new ones), run the tests one final time and screenshot or copy the output showing all green.
-
-### Part 4 — Try breaking it on purpose (5 min)
-
-12. This step is optional but instructive. In `buggy_word_counter.py`, introduce a new bug yourself — for example, delete the `.lower()` call on one line, or change the `5` in `most_common(5)` to `0`.
-13. Run the tests. Watch them fail. This is what it feels like to catch a regression — a change that broke something that used to work.
-14. Undo your change (Ctrl+Z or Cmd+Z). Run the tests. They pass again. That is the power of a test suite.
+**If something goes wrong:** Paste the exact error message into Claude Code. Git error messages are notoriously cryptic; Claude Code is good at translating them.
 
 ---
 
-## Expected Outputs
+### Guest: Steve (~45 min)
 
-By the end of lab you should have:
+Steve will speak on how he uses AI tools in real software projects — the parts that work well, the parts that require more judgment, and what he wishes he had known earlier. This is a practitioner's view of the tools you are learning.
 
-- All existing tests in `test_word_counter.py` passing
-- The three bugs in `buggy_word_counter.py` found and fixed
-- At least two new tests written (the `# TODO` items)
-- A terminal showing `X passed` with no failures
-
----
-
-## If Something Goes Wrong
-
-| Problem | What to do |
-|---|---|
-| `command not found: pytest` | Run `pip install pytest` first |
-| `ImportError: cannot import name 'count_words'` | Make sure `test_word_counter.py` and `buggy_word_counter.py` are in the same folder and you ran `python -m pytest` from that folder |
-| The AI's fix introduces a new failure | Paste the new failure back to the AI — that is the normal debug loop |
-| You cannot figure out which line has the bug | Ask the AI: "Look at this function line by line and tell me if any line looks wrong" |
-| All tests pass but the output looks wrong | Add a new test for the case that looks wrong — if there is no test for it, the test suite cannot catch it |
+Bring your questions. Good ones to ask:
+- What does your AI-assisted workflow actually look like day to day?
+- What is the thing AI is worst at that surprises people?
+- What would you tell someone just starting to build with these tools?
 
 ---
 
-## Before Next Week
+### Part 2: Break your app and fix it (25 min)
 
-Save your fixed `buggy_word_counter.py` — renamed to something meaningful, like `word_counter_fixed.py`. In Week 5 we put code under version control, and this file is a good example of "code with a history."
+This is the break-fix loop. You will intentionally introduce a bug, watch it fail, then fix it with Claude Code.
 
-Write down: what would happen if you ran your tool from Week 2 with a completely empty file? With a file full of numbers? Those are edge cases — we will test for them in a future exercise.
+**Before you start:** Make sure you have a clean commit (from Part 1). Check with `git status` — it should say "nothing to commit."
 
-## Slides
+**Step 1: Break it.**
+Ask Claude Code for a feature with a deliberately bad prompt — vague, underspecified, or contradictory. Examples that reliably cause problems:
+> "Add a button that does something with the data."
 
-See `slides.md` in this folder (also posted in Canvas).
+or
+
+> "Make the app faster."
+
+Let Claude Code make the change without being precise. Run the app. Observe what went wrong.
+
+**Step 2: Describe the bug.**
+Open `starter/bug_description_template.md`. Fill it out for the bug you just introduced.
+- What were you trying to do?
+- What did you expect to happen?
+- What actually happened? (Paste the error message if there is one.)
+- What are the steps to reproduce it?
+
+**Step 3: Fix it.**
+Give Claude Code your filled-out bug description:
+> "Here is a bug in my app: [paste your bug description]. Fix it."
+
+Compare the speed of diagnosis when you give Claude Code a precise bug report vs. a vague one.
+
+**Step 4: Commit the fix.**
+```
+git add .
+git commit -m "Fix: [describe the bug in past tense]"
+```
+
+Push to GitHub:
+```
+git push
+```
+
+## Reading for Next Week
+
+1. *Beyond Vibe Coding* — Chapter 7 (~20 min). This chapter covers data persistence and the kind of repo structure that makes AI tools more effective.
+
+2. Stanford CS146S Week 4 notes at [themodernsoftware.dev/fall2025](https://themodernsoftware.dev/fall2025) (~10 min). Skim the section on Git workflows for AI-assisted development.

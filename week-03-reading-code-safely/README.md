@@ -1,169 +1,84 @@
-# Week 3: Reading and Running AI-Generated Code Safely
+# Week 3: Read, Test & Ship
+**TECH 85 · February 3 · Stanford Continuing Studies**
 
-**Session:** Tue Feb 2, 2027, 7:00–8:30 pm PT
+## Session Goals
 
-## Goals
+- Apply the review-refine-own cycle to your Project 1 code
+- Write plain-English test cases and run them manually to verify your app works correctly
+- Deploy your Project 1 app to Streamlit Cloud and get a live public URL
 
-By the end of this session you will be able to:
+## Before Class
 
-- Read an AI-generated Python script at a high level without understanding every line
-- Spot the four categories of risky operations (file, network, subprocess, eval)
-- Use a safety checklist before running any code you did not write yourself
-- Run code inside a virtual environment to keep your computer safe
+- Bring your Project 1 project folder with an `app.py` that runs — even if it is incomplete
+- Make sure your code is in a GitHub repository (public or private). We will deploy from GitHub today. If you have not used GitHub before, create a free account at github.com and ask Claude Code to help you push your project.
+- Have VS Code open with your project folder loaded
 
----
+## Concepts (20 min)
 
-## Key Concepts
+- **The review-refine-own cycle:** When Claude Code writes code, your job is to (1) review it — read it top to bottom and ask Claude Code to explain anything you do not understand, (2) refine it — run it, catch anything wrong, ask Claude Code to fix it, (3) own it — be able to explain what it does to someone else. Do not ship code you cannot explain.
+- **Reading AI code without writing it:** You do not need to understand every line. You need to understand what each section does. The key questions: What data goes in? What happens to it? What comes out? What could go wrong?
+- **Four categories of risky operations:** File writes (can overwrite data), network requests (can send your data out), subprocess calls (can run system commands), environment variable reads (can expose secrets). Flag these when you see them.
+- **Human test checklists:** Not pytest — a simple list of plain-English assertions you verify by hand. "When I add a habit, it appears in the list." "When I restart the app, my data is still there." These are more useful for beginners than automated tests because they force you to define what "correct" means.
+- **Deploying with Streamlit Cloud:** Free, connects directly to your GitHub repository, gives you a real public URL in about two minutes. No server to manage, no command line on a remote machine. This is the deployment model you will use for all three projects.
 
-### Why reading matters
+## Lab (65 min)
 
-You do not need to understand every line of AI-generated code. But you do need to understand *what it does at a high level* before you run it. A script that looks helpful might also delete files, send your data to a server, or do something irreversible.
+### Part 1: Annotate your code with Claude Code's help (20 min)
 
-Think of it like checking a contract before signing. You do not read every clause in detail, but you do look for anything that mentions money, liability, or things you can never undo.
+Open `starter/safety_checklist.md`. Work through it with your Project 1 code open in VS Code.
 
-### The four risky categories
+1. Ask Claude Code to read your `app.py` and answer each question in the checklist.
+   > "Read app.py and answer the questions in safety_checklist.md. Keep your answers concise — one sentence per item."
+2. For any item Claude Code flags as risky, ask it to explain the risk in plain language.
+3. For any section of code you do not understand, ask:
+   > "Explain what lines 23–35 do in plain language. No jargon."
+4. By the end of this part, you should be able to explain what your app does to a classmate in 60 seconds.
 
-When you scan a new script, look for these four patterns:
+### Part 2: Write and run 5 test cases (15 min)
 
-| Category | What to look for | Why it matters |
-|---|---|---|
-| **File operations** | `open(...)`, `os.remove()`, `shutil.rmtree()`, `os.rename()` | The script can read, write, or delete your files |
-| **Network operations** | `requests`, `urllib`, `httpx`, `socket` | The script can send data to the internet |
-| **Subprocess / shell** | `subprocess`, `os.system()`, `os.popen()` | The script can run other programs on your computer |
-| **Dynamic execution** | `eval(...)`, `exec(...)` | The script can run code that was not visible when you read it |
+A test case is a plain-English sentence that describes something your app should do. You check it manually.
 
-You do not need to memorize these. The safety checklist in `starter/safety_checklist.md` has them.
+Write at least 5 test cases for your Project 1 app. Use this format:
 
-### Reading imports first
-
-The first 10–20 lines of any Python script are the `import` statements. These tell you which capabilities the script is using. Start here every time.
-
-```python
-import os        # can read/write/delete files and folders
-import requests  # can make network calls
-import subprocess  # can run shell commands
-import json      # safe — just parses data format
-import re        # safe — just works with text patterns
+```
+[ ] When I [do something], the app [does something specific].
+[ ] Example: When I add "Read for 20 minutes" as a habit, it appears in the list immediately.
+[ ] Example: When I restart the app, all my habits are still there.
+[ ] Example: When I try to add an empty habit name, the app does not crash.
+[ ] Example: When I delete a habit, it is gone from the list.
+[ ] Example: When I check off a habit twice, only one checkmark appears.
 ```
 
-Some imports are neutral (like `json`, `re`, `math`). Some are powerful and worth examining more closely.
+Run each test manually in your running app. Mark them pass or fail. For any failure:
+> "My app fails this test: [paste the test case]. The actual behavior is [what actually happened]. Fix it."
 
-### Virtual environments
+### Part 3: Deploy to Streamlit Cloud (20 min)
 
-A virtual environment is a contained copy of Python that is isolated from the rest of your computer. If something goes wrong inside a virtual environment, it is easy to delete and start fresh without affecting your other projects or system files.
+Follow `starter/streamlit_deploy_guide.md` step by step. The guide covers every step from "make sure your code is in GitHub" through "share your URL."
 
-Creating one takes 30 seconds. You should use one for every project.
+The most common blocker is a missing `requirements.txt`. Ask Claude Code to generate it before you try to deploy:
+> "Look at my project and generate a requirements.txt that lists all the Python packages it needs."
 
-```bash
-# Create a virtual environment named "venv" in the current folder
-python -m venv venv
+When your app is deployed, paste your public URL into the Canvas Week 3 thread.
 
-# Activate it (Mac/Linux)
-source venv/bin/activate
+### Part 4: 3-minute Project 1 demo (10 min)
 
-# Activate it (Windows)
-venv\Scripts\activate
+Each student has 3 minutes. Show:
+1. Your live app at its public URL
+2. One thing it does that you are proud of
+3. One thing you would add if you had more time
 
-# You will see (venv) in your terminal prompt — that means it is active
-# Install packages inside it safely
-pip install requests
+You are not being graded on completeness. You are practicing the demo format you will use in Week 6 and Week 8.
 
-# Deactivate when done
-deactivate
-```
+## Project Milestone
 
-### Never run as root or administrator
+**Project 1 complete.** Submit to Canvas:
+1. Your live Streamlit Cloud URL
+2. A link to your GitHub repository
+3. Two sentences: what your app does and what you learned building it
 
-Running a script with elevated privileges (as `root` on Mac/Linux, or "Run as Administrator" on Windows) gives that script permission to modify system files. A script that has a bug could damage your operating system. Only ever run scripts in a normal user terminal.
+## Reading for Next Week
 
----
+1. *Beyond Vibe Coding* — Chapter 5 (~15 min). This chapter covers testing concepts in more depth, including how to think about edge cases.
 
-## Lab: The Code Review
-
-This lab takes about 45 minutes. You will review a realistic but safe Python script (`starter/review_me.py`) using the safety checklist.
-
-### Part 1 — Read the imports (10 min)
-
-1. Open `starter/review_me.py` in VS Code.
-2. Read only the first 20 lines (do not scroll further yet).
-3. Open `starter/safety_checklist.md`. For each import you see, check the corresponding box.
-4. Ask yourself: "Based on these imports alone, what is this script probably going to do?"
-5. Write your answer (one sentence) as a comment at the very top of the checklist file.
-
-### Part 2 — Use AI to explain the script (15 min)
-
-6. Go back to `review_me.py` and now read the whole file. Do not worry if most of it is unfamiliar.
-7. Open Claude. Paste the entire contents of `review_me.py` and ask:
-   > "I am reviewing this Python script before running it. Please explain what each section does in plain English. Focus especially on: what files it reads or writes, what network calls it makes, and whether it does anything that cannot be undone."
-
-8. Read the AI's explanation carefully. Go back to the checklist and fill in the "Notes" column for each item.
-
-9. Ask the AI two follow-up questions:
-   > "Does this script write or overwrite any files on my computer? If yes, which ones?"
-
-   > "Does this script send any data to an external server? If yes, what data and where?"
-
-### Part 3 — Run the script safely (15 min)
-
-10. Open a terminal in VS Code. Create a virtual environment:
-    ```bash
-    python -m venv venv
-    ```
-
-11. Activate it:
-    ```bash
-    # Mac / Linux:
-    source venv/bin/activate
-    # Windows:
-    venv\Scripts\activate
-    ```
-    You should see `(venv)` appear at the start of your terminal prompt.
-
-12. Install the one required library:
-    ```bash
-    pip install requests
-    ```
-
-13. Look at the top of `review_me.py` — it has a comment block showing how to run it. Follow those instructions. The script needs a folder of text files; use `../week-01-first-tool/starter/` as the input folder.
-
-14. Read the output. Does it match what the AI's explanation said it would do?
-
-### Part 4 — Complete the checklist (5 min)
-
-15. Finish filling in `safety_checklist.md`. For the final question — "Would you run this script on a computer you care about?" — answer honestly and explain why.
-
-16. **Bonus:** Find the line in `review_me.py` that writes a file. Ask the AI: "How would I change this script so it asks me for permission before writing any file?"
-
----
-
-## Expected Outputs
-
-By the end of lab you should have:
-
-- A completed `safety_checklist.md` with notes for every section
-- A terminal showing successful output from `review_me.py`
-- Answers to both follow-up AI questions (what files it writes, what data it sends)
-
----
-
-## If Something Goes Wrong
-
-| Problem | What to do |
-|---|---|
-| `ModuleNotFoundError: No module named 'requests'` | Make sure the virtual environment is activated (`(venv)` should show in your prompt), then run `pip install requests` |
-| `(venv)` is not showing in the prompt | Run the activate command again. On Windows, check that you typed `venv\Scripts\activate` (backslash, not forward slash) |
-| Script crashes with a permission error | Do not run as administrator. Close the terminal, open a new normal terminal, and try again |
-| The AI explanation mentions something alarming | Ask it to show you the specific line. Then ask: "Is this dangerous? What would it take for this to cause harm?" |
-| VS Code says it cannot find Python | Click the Python version in the bottom-left of VS Code and select the `venv` interpreter |
-
----
-
-## Before Next Week
-
-Keep your copy of `review_me.py` open. In Week 4 we will write tests for a similar script — understanding what a script *does* is the first step to knowing how to test it.
-
-Also: make sure your `my_tool.py` from Week 2 is saved somewhere you can find it. We will use it in Week 4.
-
-## Slides
-
-See `slides.md` in this folder (also posted in Canvas).
+2. CMU 15-113 "Testing and Quality Assurance" notes — posted on Canvas (~15 min). Focus on the section on manual testing and test case design.

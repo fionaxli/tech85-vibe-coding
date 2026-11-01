@@ -1,273 +1,253 @@
-"""Week 8: evaluation harness.
+"""
+Week 8 evaluation harness: run a test set against any function.
 
-This script runs a set of test cases through a function, then uses Claude to
-grade each output against an expected result. It prints a summary table and
-saves the results to eval_results.txt.
+This harness works with any Python function that takes a string input
+and returns a string output. It runs each test case, compares the
+result to the expected output, and prints a pass/fail report.
 
-How to run:
+HOW TO ADAPT IT TO YOUR CAPSTONE:
+1. Replace the example test cases at the bottom with your own.
+2. Replace the example_function() with a function from your project.
+3. (Optional) Enable the LLM-as-a-judge section to get AI-scored evaluation.
+
+Run it:
     python eval_harness.py
 
-Setup:
-    pip install anthropic
-    export ANTHROPIC_API_KEY="sk-ant-yourkey"   (Mac/Linux)
-    set ANTHROPIC_API_KEY=sk-ant-yourkey        (Windows)
-
-Customizing:
-    1. Change FUNCTION_TO_TEST to point to the function you want to evaluate.
-    2. Add more entries to TEST_CASES — at least 5 more for the lab.
-    3. The harness handles the rest.
+To use the LLM-as-a-judge feature, you need an Anthropic API key in your .env:
+    ANTHROPIC_API_KEY=your_key_here
 """
 
 import os
-import sys
-from datetime import datetime
+import json
+from dataclasses import dataclass, field
+from typing import Callable
 
-# Load .env file if present
-try:
-    from dotenv import load_dotenv
-    load_dotenv()
-except ImportError:
-    pass
+# -----------------------------------------------------------------------
+# Test case definition
+# -----------------------------------------------------------------------
 
-try:
-    import anthropic
-except ImportError:
-    print("Error: install the anthropic library first: pip install anthropic")
-    sys.exit(1)
-
-# ---------------------------------------------------------------------------
-# Import the function to test
-# ---------------------------------------------------------------------------
-# By default this tests count_words from the Week 1 / Week 4 word counter.
-# To test your own tool, change this import and update TEST_CASES below.
-#
-# Example for your own tool:
-#   import sys, os
-#   sys.path.insert(0, os.path.join(os.path.dirname(__file__), "../../week-02-specs-and-prompts/starter"))
-#   from my_tool import my_function
-#   FUNCTION_TO_TEST = my_function
-
-import sys, os
-sys.path.insert(
-    0,
-    os.path.join(os.path.dirname(__file__), "../../week-01-first-tool/starter")
-)
-try:
-    from word_counter import count_words
-
-    def FUNCTION_TO_TEST(text: str) -> str:
-        """Wrapper so count_words fits the harness interface (input → string output)."""
-        total, top = count_words(text)
-        top_str = ", ".join(f"{w}({n})" for w, n in top)
-        return f"total={total}, top=[{top_str}]"
-
-except ImportError:
-    print("Could not import word_counter from Week 1.")
-    print("Update the import at the top of this file to point to your own tool.")
-    sys.exit(1)
+@dataclass
+class TestCase:
+    """A single test case: an input, an expected output, and an optional description."""
+    input: str
+    expected: str
+    description: str = ""
+    # Pass criteria: "exact" (string match) or "contains" (expected is substring of actual)
+    match_type: str = "contains"
 
 
-# ---------------------------------------------------------------------------
-# Test cases
-# ---------------------------------------------------------------------------
-# Each test case is a dict with:
-#   "input"    — the string to pass to FUNCTION_TO_TEST
-#   "expected" — a description of what a GOOD output looks like
-#                (does not have to be exact; Claude uses it as a rubric)
-#   "label"    — a short name for this test case
-
-TEST_CASES = [
-    {
-        "label": "basic sentence",
-        "input": "the quick brown fox jumps over the lazy dog",
-        "expected": "total=9, top words are fox, quick, brown, jumps, lazy (each count 1); 'the' excluded as common word",
-    },
-    {
-        "label": "repeated word",
-        "input": "apple apple apple banana banana",
-        "expected": "total=5, top word is apple with count 3, then banana with count 2",
-    },
-    {
-        "label": "only common words",
-        "input": "the and a of to in is it that for",
-        "expected": "total=10, top words list is empty because all words are common words",
-    },
-    {
-        "label": "mixed case",
-        "input": "Hello hello HELLO world World",
-        "expected": "total=5, hello appears 3 times (case insensitive), world appears 2 times",
-    },
-    {
-        "label": "empty string",
-        "input": "",
-        "expected": "total=0, top words list is empty",
-    },
-    # -----------------------------------------------------------------------
-    # TODO: Add at least 5 more test cases below this line.
-    #
-    # Ideas:
-    #   - A very long piece of text (paste a paragraph from any article)
-    #   - Text with punctuation (commas, periods, exclamation marks)
-    #   - Text with apostrophes (don't, it's, won't)
-    #   - Text with numbers mixed in ("I have 3 cats")
-    #   - A single word
-    #   - Text with lots of the same word to verify the count
-    # -----------------------------------------------------------------------
-]
+@dataclass
+class TestResult:
+    """The result of running one test case."""
+    test: TestCase
+    actual_output: str
+    passed: bool
+    judge_score: int | None = None       # 1–5 if LLM-as-a-judge was used
+    judge_explanation: str = ""
 
 
-# ---------------------------------------------------------------------------
-# LLM judge
-# ---------------------------------------------------------------------------
+# -----------------------------------------------------------------------
+# Core evaluation engine
+# -----------------------------------------------------------------------
 
-JUDGE_MODEL = "claude-opus-4-5"
-
-JUDGE_PROMPT_TEMPLATE = """\
-I am evaluating a text-processing tool. Here is one test case:
-
-INPUT:
-{input}
-
-EXPECTED OUTPUT (description of what a good output looks like):
-{expected}
-
-ACTUAL OUTPUT (what the tool produced):
-{actual}
-
-Please rate the actual output on a scale of 1 to 5 where:
-  5 = Exactly correct or clearly matches what was expected
-  4 = Mostly correct, minor differences that do not affect usefulness
-  3 = Partially correct — some right, some wrong
-  2 = Mostly wrong, but there is one correct element
-  1 = Completely wrong or the tool crashed
-
-Reply with:
-SCORE: [1-5]
-REASON: [one sentence explaining your rating]
-"""
-
-
-def judge_output(input_text: str, expected: str, actual: str, client: anthropic.Anthropic) -> tuple[int, str]:
-    """Ask Claude to rate the actual output against the expected description.
-
-    Returns (score, reason) where score is an int 1–5.
-    """
-    prompt = JUDGE_PROMPT_TEMPLATE.format(
-        input=input_text or "(empty string)",
-        expected=expected,
-        actual=actual or "(no output produced)",
-    )
-
+def run_test(test: TestCase, fn: Callable[[str], str]) -> TestResult:
+    """Run one test case against a function and return the result."""
     try:
+        actual = fn(test.input)
+    except Exception as e:
+        actual = f"ERROR: {str(e)}"
+
+    if test.match_type == "exact":
+        passed = actual.strip() == test.expected.strip()
+    else:  # "contains"
+        passed = test.expected.lower() in actual.lower()
+
+    return TestResult(test=test, actual_output=actual, passed=passed)
+
+
+def run_test_suite(
+    test_cases: list[TestCase],
+    fn: Callable[[str], str],
+    use_llm_judge: bool = False,
+) -> list[TestResult]:
+    """Run all test cases and return results."""
+    results = []
+    for i, test in enumerate(test_cases, 1):
+        print(f"Running test {i}/{len(test_cases)}: {test.description or test.input[:40]}...")
+        result = run_test(test, fn)
+        if use_llm_judge:
+            result = add_llm_judgment(result)
+        results.append(result)
+    return results
+
+
+# -----------------------------------------------------------------------
+# LLM-as-a-judge (optional)
+#
+# Requires the anthropic package and an API key in .env.
+# pip install anthropic
+# -----------------------------------------------------------------------
+
+def add_llm_judgment(result: TestResult) -> TestResult:
+    """Use Claude to score a test result 1–5 and explain the score."""
+    try:
+        import anthropic
+        from dotenv import load_dotenv
+        load_dotenv()
+
+        client = anthropic.Anthropic(api_key=os.getenv("ANTHROPIC_API_KEY"))
+
+        prompt = f"""You are evaluating a software tool's output against an expected behavior.
+
+Input: {result.test.input}
+Expected behavior: {result.test.expected}
+Actual output: {result.actual_output}
+
+Rate the actual output 1–5:
+  5 = Exactly correct
+  4 = Correct with minor issues
+  3 = Partially correct
+  2 = Wrong but related to the expected behavior
+  1 = Completely wrong or error
+
+Respond with JSON only:
+{{"score": <1-5>, "explanation": "<one sentence>"}}"""
+
         message = client.messages.create(
-            model=JUDGE_MODEL,
+            model="claude-3-5-haiku-20241022",
             max_tokens=200,
             messages=[{"role": "user", "content": prompt}],
         )
         response_text = message.content[0].text.strip()
+        data = json.loads(response_text)
+        result.judge_score = data["score"]
+        result.judge_explanation = data["explanation"]
+    except ImportError:
+        result.judge_explanation = "anthropic package not installed. Run: pip install anthropic"
+    except Exception as e:
+        result.judge_explanation = f"LLM judge failed: {str(e)}"
 
-        # Parse the structured response
-        score = 3   # default if parsing fails
-        reason = response_text
-
-        for line in response_text.splitlines():
-            if line.upper().startswith("SCORE:"):
-                try:
-                    score = int(line.split(":", 1)[1].strip())
-                    score = max(1, min(5, score))   # clamp to 1–5
-                except ValueError:
-                    pass
-            elif line.upper().startswith("REASON:"):
-                reason = line.split(":", 1)[1].strip()
-
-        return score, reason
-
-    except anthropic.AuthenticationError:
-        print("\nError: Anthropic API key is missing or invalid.")
-        print("Set it with: export ANTHROPIC_API_KEY='sk-ant-yourkey'")
-        sys.exit(1)
-    except Exception as exc:
-        return 0, f"Judge error: {exc}"
+    return result
 
 
-# ---------------------------------------------------------------------------
-# Main
-# ---------------------------------------------------------------------------
+# -----------------------------------------------------------------------
+# Report generation
+# -----------------------------------------------------------------------
 
-def run_evaluation() -> None:
-    if not os.environ.get("ANTHROPIC_API_KEY"):
-        print("Error: ANTHROPIC_API_KEY is not set.")
-        print("Set it with: export ANTHROPIC_API_KEY='sk-ant-yourkey'  (Mac/Linux)")
-        print("         or: set ANTHROPIC_API_KEY=sk-ant-yourkey        (Windows)")
-        sys.exit(1)
+def print_report(results: list[TestResult]) -> None:
+    """Print a formatted test report."""
+    passed = sum(1 for r in results if r.passed)
+    total = len(results)
 
-    client = anthropic.Anthropic()
+    print("\n" + "=" * 60)
+    print(f"EVALUATION REPORT — {passed}/{total} tests passed")
+    print("=" * 60)
 
-    results = []
-    total_score = 0
+    for i, result in enumerate(results, 1):
+        status = "PASS" if result.passed else "FAIL"
+        description = result.test.description or f"Test {i}"
+        print(f"\n[{status}] {description}")
+        print(f"  Input:    {result.test.input[:60]}")
+        print(f"  Expected: {result.test.expected[:60]}")
+        print(f"  Actual:   {result.actual_output[:60]}")
 
-    print(f"Running {len(TEST_CASES)} test cases...\n")
-    print(f"{'#':<4} {'Label':<25} {'Score':<7} Reason")
-    print("-" * 80)
+        if result.judge_score is not None:
+            print(f"  LLM judge score: {result.judge_score}/5 — {result.judge_explanation}")
 
-    for i, case in enumerate(TEST_CASES, 1):
-        label = case["label"]
-        input_text = case["input"]
-        expected = case["expected"]
+    print("\n" + "=" * 60)
+    if passed == total:
+        print("All tests passed.")
+    else:
+        print(f"{total - passed} test(s) failed. See details above.")
+    print("=" * 60 + "\n")
 
-        # Run the function
-        try:
-            actual = FUNCTION_TO_TEST(input_text)
-        except Exception as exc:
-            actual = f"CRASHED: {exc}"
 
-        # Ask Claude to grade it
-        score, reason = judge_output(input_text, expected, actual, client)
-        total_score += score
+# -----------------------------------------------------------------------
+# Example: adapt this section for your Capstone
+#
+# Replace example_function() with a function from your own project.
+# Replace the test cases with inputs and expected outputs that match
+# your Capstone's core behavior.
+#
+# Tips:
+# - "contains" match type is more forgiving — use it for outputs where
+#   the exact wording may vary but the key information should be present.
+# - "exact" match type is strict — use it for things like counts, IDs,
+#   or formatted outputs that should always be exactly the same.
+# - Write at least 5 test cases: the happy path, an edge case,
+#   an invalid input, a boundary condition, and one you are not sure about.
+# -----------------------------------------------------------------------
 
-        results.append({
-            "case_num": i,
-            "label": label,
-            "input": input_text,
-            "expected": expected,
-            "actual": actual,
-            "score": score,
-            "reason": reason,
-        })
+def example_function(text: str) -> str:
+    """An example function to evaluate: counts words in a string.
 
-        score_display = f"{score}/5"
-        print(f"{i:<4} {label:<25} {score_display:<7} {reason[:60]}")
+    Replace this with a function from your Capstone.
+    For a Streamlit app, you may need to extract the core logic
+    into a testable function that does not require the Streamlit UI.
 
-    # Summary
-    avg = total_score / len(TEST_CASES) if TEST_CASES else 0
-    passed = sum(1 for r in results if r["score"] >= 4)
-    print("-" * 80)
-    print(f"Average score: {avg:.1f}/5   |   Passed (4+): {passed}/{len(TEST_CASES)}")
-    print()
+    Ask Claude Code:
+    "Extract the core logic from my app.py into a separate function
+     that takes [input type] and returns [output type], so I can
+     test it without running the Streamlit UI."
+    """
+    words = text.split()
+    count = len(words)
+    if count == 0:
+        return "No words found."
+    elif count == 1:
+        return f"1 word found."
+    else:
+        return f"{count} words found."
 
-    # Save detailed results
-    output_path = os.path.join(os.path.dirname(__file__), "eval_results.txt")
-    with open(output_path, "w", encoding="utf-8") as f:
-        f.write(f"Evaluation Results\n")
-        f.write(f"Run at: {datetime.now().strftime('%Y-%m-%d %H:%M')}\n")
-        f.write(f"Function: {FUNCTION_TO_TEST.__name__}\n")
-        f.write(f"Model used for judging: {JUDGE_MODEL}\n")
-        f.write("=" * 60 + "\n\n")
 
-        for r in results:
-            f.write(f"Test {r['case_num']}: {r['label']}\n")
-            f.write(f"  Input:    {r['input'][:80]!r}\n")
-            f.write(f"  Expected: {r['expected'][:80]}\n")
-            f.write(f"  Actual:   {r['actual'][:80]}\n")
-            f.write(f"  Score:    {r['score']}/5\n")
-            f.write(f"  Reason:   {r['reason']}\n\n")
+# Replace these test cases with your own
+EXAMPLE_TEST_CASES = [
+    TestCase(
+        input="Hello world this is a test",
+        expected="6 words",
+        description="Normal sentence — should count 6 words",
+        match_type="contains",
+    ),
+    TestCase(
+        input="",
+        expected="No words found",
+        description="Empty input — should handle gracefully",
+        match_type="contains",
+    ),
+    TestCase(
+        input="OneWord",
+        expected="1 word",
+        description="Single word — should use singular form",
+        match_type="contains",
+    ),
+    TestCase(
+        input="   spaces   between   words   ",
+        expected="3 words",
+        description="Extra whitespace — should still count correctly",
+        match_type="contains",
+    ),
+    TestCase(
+        input="The quick brown fox jumps over the lazy dog",
+        expected="9 words",
+        description="Classic 9-word sentence",
+        match_type="contains",
+    ),
+]
 
-        f.write("-" * 60 + "\n")
-        f.write(f"Average score: {avg:.1f}/5\n")
-        f.write(f"Passed (score >= 4): {passed}/{len(TEST_CASES)}\n")
 
-    print(f"Detailed results saved to: {output_path}")
-
+# -----------------------------------------------------------------------
+# Main entry point
+# -----------------------------------------------------------------------
 
 if __name__ == "__main__":
-    run_evaluation()
+    print("Running evaluation harness...")
+    print("(To use your own function and test cases, edit the EXAMPLE sections above.)\n")
+
+    # Set use_llm_judge=True to enable LLM scoring (requires ANTHROPIC_API_KEY in .env)
+    results = run_test_suite(
+        test_cases=EXAMPLE_TEST_CASES,
+        fn=example_function,
+        use_llm_judge=False,
+    )
+
+    print_report(results)

@@ -6,194 +6,181 @@ footer: "TECH 85 · Week 3 · Stanford Continuing Studies"
 ---
 
 <!-- _class: lead -->
-# Week 3: Reading and Running AI-Generated Code Safely
+# Week 3: Read, Test & Ship
 ### TECH 85: Vibe Coding
-Stanford Continuing Studies · Feb 2, 2027
+Stanford Continuing Studies · February 3
 
 ---
 
 ## Agenda
 
-1. Why you need to read code before running it
-2. The four risky operation categories
-3. Reading imports: your 30-second scan
-4. Virtual environments: your safety net
-5. Never run as root
-6. Demo: reviewing a real script with AI help
-7. Lab: complete the code review checklist
+1. Recap: BRIEF.md, CLAUDE.md, Project 1 status
+2. The review-refine-own cycle
+3. Reading AI code without writing it
+4. Four categories of risky operations
+5. The test checklist approach
+6. Streamlit Cloud deployment walkthrough
+7. Lab + Project 1 demo format
 
 ---
 
-## You Got the Code. Now What?
+## Recap: the context engineering work pays off here
 
-Last week you built a tool from a spec. You ran it immediately.
+Last week you wrote a BRIEF.md and had Claude Code scaffold your project.
 
-That works when the AI is just printing text. It gets risky when code can:
-- Delete or overwrite files
-- Send data to the internet
-- Run other programs on your computer
+This week you face what everyone faces after AI-generated code: **it runs, but you are not sure it is right.**
 
-**You are not being paranoid.** You are being a responsible user. A 2-minute read prevents a lot of grief.
+The review-refine-own cycle is your answer to that situation.
 
----
-
-## The Contract Analogy
-
-You do not read every clause of every contract. But before you sign, you scan for:
-- Anything that costs you money
-- Anything you can never undo
-- Anything that gives away something important
-
-**Code review works the same way.** You do not need to understand every line. You need to spot the four categories that matter.
+It is not about memorizing syntax. It is about asking good questions until you understand what your code does.
 
 ---
 
-## The Four Risky Categories
+## The review-refine-own cycle
 
-| Category | Signals in code | What it can do |
+**Review:** Read it. Ask Claude Code to explain every section you do not understand. You should be able to describe what each function does in one sentence.
+
+**Refine:** Run it. Deliberately try to break it. Find the cases where it does not behave the way you expected. Ask Claude Code to fix them. Repeat until it passes your test checklist.
+
+**Own:** Be able to explain it. If you cannot explain what your app does to a classmate in 60 seconds, you do not own it yet. Go back to Review.
+
+This cycle takes longer than just shipping. It is also the difference between a tool you trust and a tool that surprises you at the worst moment.
+
+---
+
+## Reading code top-down
+
+You do not need to understand every line. Here is the reading strategy that works for non-programmers:
+
+**Step 1: Find the entry point.** Where does the code start? In a Streamlit app, it is the last few lines — the call to `st.run()` or the `if __name__ == "__main__"` block.
+
+**Step 2: Follow the data.** What goes in? (user input, a file, an API call) What happens to it? (a function, a loop, a database write) What comes out? (what gets displayed, stored, or returned)
+
+**Step 3: Ask about anything you do not recognize.** In Claude Code:
+> "What does this line do? `conn = sqlite3.connect('habits.db')`"
+
+You are reading for understanding, not for memorization.
+
+---
+
+## Four categories of risky operations
+
+When reviewing AI-generated code, look for these four things. They are not necessarily wrong — but they are worth understanding.
+
+| Category | What to look for | Question to ask |
 |---|---|---|
-| **Files** | `open()`, `os.remove()`, `shutil.rmtree()` | Read, write, or delete your files |
-| **Network** | `requests`, `urllib`, `httpx`, `socket` | Send data to the internet |
-| **Shell** | `subprocess`, `os.system()`, `os.popen()` | Run other programs |
-| **Dynamic exec** | `eval()`, `exec()` | Run invisible code |
+| **File writes** | `open(path, 'w')`, `os.remove()` | What file is being modified? Could this overwrite something important? |
+| **Network requests** | `requests.get()`, `requests.post()` | What URL is being called? What data is being sent? |
+| **Subprocess calls** | `subprocess.run()`, `os.system()` | What command is being run? Who can trigger it? |
+| **Secrets** | `os.getenv()`, `.env` access | Is the key being read safely? Is it being logged anywhere? |
 
-You will use a checklist in lab. You do not need to memorize this table.
+Ask Claude Code: "Read my app.py and flag any file writes, network requests, subprocess calls, or places where secrets are used."
 
 ---
 
-## Start With the Imports
+## The test checklist: simpler than it sounds
 
-The first 10–20 lines of every Python script are `import` statements.
+Automated tests are useful. They are also a new skill to learn.
 
-```python
-import os          # can touch files and folders
-import requests    # makes network calls
-import subprocess  # runs shell commands
-import json        # safe — parses data
-import re          # safe — text patterns
-import math        # safe — arithmetic
+A human test checklist is simpler and more useful for right now:
+
+```
+[ ] When I add a habit, it appears in the list immediately.
+[ ] When I refresh the page, my habits are still there.
+[ ] When I restart the app, my habits are still there.
+[ ] When I delete a habit, it disappears from the list.
+[ ] When I try to add an empty habit name, the app doesn't crash.
+[ ] When I check off a habit, the streak count updates correctly.
 ```
 
-**Scan the imports first.** They tell you what capabilities the script has claimed, before you see what it actually does with them.
+Run each one manually. Mark pass or fail. For any failure, bring it to Claude Code with the exact behavior you observed.
+
+The skill here is **defining what correct looks like before you run the test.**
 
 ---
 
-## A Quick Import Scan in Practice
+## Streamlit Cloud: how it works
 
-You see:
-```python
-import os
-import requests
-import json
-```
+Streamlit Cloud is a free hosting service from the makers of Streamlit. It:
+- Connects to a GitHub repository
+- Reads your `app.py` (or whatever main file you specify)
+- Installs your `requirements.txt` automatically
+- Gives you a public URL: `your-project.streamlit.app`
 
-You immediately know:
-- This script **can** read or write files
-- This script **can** make network calls
-- It uses JSON — probably reading or writing data
+Deploys in about 2 minutes. No server to manage. No command line on a remote machine. When you push a new commit to GitHub, the deployed app updates automatically.
 
-Now read the rest with those questions in mind:
-- *Which* files does it touch?
-- *What data* does it send, and *where*?
+This is your deployment target for all three projects.
 
 ---
 
-## Virtual Environments: Your Safety Net
+## Deploying to Streamlit Cloud: the steps
 
-A virtual environment is a self-contained copy of Python, isolated from the rest of your computer.
+1. **Make sure your code is in GitHub.** Public or private — both work.
+2. **Make sure `requirements.txt` is in your repo root.** Ask Claude Code to generate it if it is not there: *"Generate a requirements.txt for my project."*
+3. **Go to [share.streamlit.io](https://share.streamlit.io).** Sign in with your GitHub account.
+4. **Click "New app."** Select your repository, your branch (usually `main`), and your main file path (usually `app.py`).
+5. **Click Deploy.** Watch the logs. If it fails, the error is usually a missing package in `requirements.txt`.
+6. **Share your URL.** Format: `https://your-app-name.streamlit.app`
 
-**Why use one:**
-- Packages installed inside it stay inside it
-- If something goes wrong, delete the folder and start over
-- Does not affect your system Python or other projects
-
-**How to create one (30 seconds):**
-```bash
-python -m venv venv
-source venv/bin/activate    # Mac/Linux
-# venv\Scripts\activate     # Windows
-```
-
-You will see `(venv)` in your prompt. That means it is active.
+Full step-by-step guide with troubleshooting in `starter/streamlit_deploy_guide.md`.
 
 ---
 
-## The Root Rule
+## Three most common deployment errors
 
-> **Never run a script as root or as administrator.**
+**Error 1: `ModuleNotFoundError: No module named 'X'`**
+A package in your code is not in `requirements.txt`. Add it: `echo "package-name" >> requirements.txt`, commit, push.
 
-Running with elevated privileges means the script can modify system files, install software, or delete things that your operating system needs.
+**Error 2: `FileNotFoundError: No such file or directory`**
+Your code references a file by its local path (e.g., `open('data/notes.db')`). On Streamlit Cloud, relative paths work differently. Ask Claude Code: *"Fix any hardcoded file paths so they work on Streamlit Cloud."*
 
-- Mac/Linux: Do not use `sudo python my_script.py`
-- Windows: Do not right-click and "Run as administrator"
-
-A normal user terminal limits what any script can break. Use one every time.
-
----
-
-## Demo: Reviewing `review_me.py`
-
-*Watch me review the lab script live.*
-
-Steps I will take:
-1. Read the imports — what capabilities has it claimed?
-2. Paste the whole file into Claude, ask for a plain-English explanation
-3. Ask specifically: "What files does this write? What data does it send?"
-4. Fill in the checklist
-5. Create a virtual environment and run the script
+**Error 3: App runs but shows a blank screen**
+Usually means your `app.py` runs but has no `st.` calls at the top level. Ask Claude Code: *"Add a simple st.title() call at the top of app.py to confirm it is loading."*
 
 ---
 
-## The "Explain Back" Check for Code
+## The 3-minute demo format
 
-The same technique from Week 2 applies to reviewing code you didn't write:
+Today and in Weeks 6 and 8, you have 3 minutes to demo your project. Here is the structure:
 
-> "I am about to run this Python script. Explain what each section does in plain English. Focus on what files it reads or writes, what network calls it makes, and anything that cannot be undone."
+1. **Show the live URL** (15 sec) — open your browser, go to your app
+2. **Explain what it does** (30 sec) — one sentence, like you are telling a friend
+3. **Demo the core feature** (90 sec) — do the thing. Add an entry, check it off, show it persisting.
+4. **Share one thing you are proud of** (30 sec) — a feature, a bug you fixed, a design decision
+5. **Share one thing you would add next** (15 sec) — keep it specific
 
-This forces the AI to surface the risky parts, not just summarize what the script claims to do.
-
----
-
-## What Is `review_me.py`?
-
-The lab script is a realistic tool that:
-- Reads all `.txt` files from a folder you specify
-- Calls a web API to process the text
-- Writes results to a CSV file
-
-It is safe and intentionally written for this class. But it has all four operation categories — files, network, nothing dangerous, but worth reading carefully before trusting.
+You will not be interrupted. Three minutes goes fast — practice once before class.
 
 ---
 
-## Lab Overview (45 min)
+## Lab overview
 
-| Time | Activity |
-|------|----------|
-| 0–10 min | Part 1: Read the imports, fill in checklist |
-| 10–25 min | Part 2: Use AI to explain the full script |
-| 25–40 min | Part 3: Create a virtual environment and run it |
-| 40–45 min | Part 4: Finish the checklist, answer the final question |
+**What you are doing today (65 min)**
 
-Starter files in `starter/`:
-- `review_me.py` — the script to review
-- `safety_checklist.md` — your review form
+| Part | Time | What you do |
+|---|---|---|
+| Part 1 | 20 min | Work through safety_checklist.md with Claude Code on your app.py |
+| Part 2 | 15 min | Write 5 test cases; run them manually; fix any failures |
+| Part 3 | 20 min | Deploy to Streamlit Cloud; paste your URL in Canvas |
+| Part 4 | 10 min | 3-minute Project 1 demo |
 
 ---
 
-## Key Takeaways
+## Key takeaways
 
-1. **Read imports first** — they tell you what a script is capable of doing
-2. **Four categories to flag** — files, network, shell, dynamic eval
-3. **Use "explain back"** — ask AI to describe risky parts specifically
-4. **Virtual environments every time** — they contain mistakes
-5. **Never run as root** — a normal terminal limits blast radius
+- Review-refine-own: do not ship code you cannot explain
+- Reading code means following the data — what goes in, what happens, what comes out
+- Four risk categories to look for: file writes, network requests, subprocess calls, secrets
+- Plain-English test checklists are the right testing tool for where you are right now
+- Streamlit Cloud: free, deploys from GitHub, gives you a real public URL in 2 minutes
+- The 3-minute demo is a skill — practice it before class
 
 ---
 
-## Before Next Week
+## Reading for next week
 
-- Keep `review_me.py` open — we will write tests for a similar script in Week 4
-- Make sure you have your `my_tool.py` from Week 2 saved
-- Optional: try the "explain back" technique on one piece of code you have run before — does anything surprise you?
+**Before Wednesday, February 10:**
 
-**Next session:** Feb 9 — Testing and debugging with AI
+1. *Beyond Vibe Coding* — Chapter 6 (~15 min). This chapter introduces the concepts around Git and version control for AI-generated code.
+
+2. Make sure Git is installed before next class: open your terminal and type `git --version`. If you get a "command not found" error, install Git from [git-scm.com](https://git-scm.com) and let us know on Canvas.

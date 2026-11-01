@@ -1,157 +1,100 @@
 # Code Safety Checklist
 
-**Script under review:** `review_me.py`
-**Reviewer:** [Your name]
-**Date:** [Today's date]
+Use this checklist to review any AI-generated code before you run it or deploy it.
+
+You do not need to understand every line. You need to understand what each section *does*.
+
+**How to use this with Claude Code:**
+Open your `app.py` and this file side by side. Then ask Claude Code:
+> "Read app.py and answer each question in safety_checklist.md. Keep your answers to one sentence each. Flag anything I should look at more carefully."
 
 ---
 
-## Step 1: First impression (before reading the code)
+## Section 1: What does this code do overall?
 
-What does the script *claim* to do, based on the comment at the top?
-
-> Your answer:
-
----
-
-## Step 2: Import scan
-
-Read only the `import` lines at the top of the script. For each import below, check whether it appears and add a note about what it gives the script permission to do.
-
-| Import | Present? | What it can do | Your notes |
-|---|---|---|---|
-| `os` | Yes / No | Read/write files, list folders, delete files | |
-| `sys` | Yes / No | Read command-line arguments, exit the program | |
-| `requests` | Yes / No | Make HTTP calls to the internet | |
-| `subprocess` | Yes / No | Run shell commands or other programs | |
-| `csv` | Yes / No | Read and write CSV files | |
-| `json` | Yes / No | Parse JSON data (safe — no side effects) | |
-| `eval` or `exec` | Yes / No | Execute arbitrary code at runtime | |
-| Other imports you see: | | | |
-
-**After reading the imports, what do you predict this script does?**
-
-> Your one-sentence prediction:
+- [ ] I can describe what this app does in one sentence.
+- [ ] I know what the main file is (usually `app.py`) and where the code starts running.
+- [ ] I know what data goes in (user input? a file? an API?) and what comes out (a display? a file? a database write?).
 
 ---
 
-## Step 3: File operations
+## Section 2: File operations
 
-Search the script for: `open(`, `os.remove(`, `os.unlink(`, `shutil.rmtree(`, `os.rename(`
+File operations can create, modify, or delete files on your computer. Look for:
+- `open(filename, 'w')` or `open(filename, 'a')` — writes to a file
+- `os.remove()` or `shutil.rmtree()` — deletes files or folders
+- `json.dump()`, `csv.writer` — writes structured data to a file
 
-| Question | Your answer |
-|---|---|
-| Does the script open any files for reading? | |
-| Does the script write or create any files? | |
-| If yes — what is the output filename? | |
-| Does it overwrite files without asking? | |
-| Could it accidentally delete your files? | |
-
----
-
-## Step 4: Network operations
-
-Search the script for: `requests.`, `urllib`, `httpx`, `socket`, `http.client`
-
-| Question | Your answer |
-|---|---|
-| Does the script make any network calls? | |
-| If yes — what URL does it contact? | |
-| Does it send any of your data in the request body? | |
-| Is the URL hardcoded or could it be changed by user input? | |
+**Questions:**
+- [ ] Does this code write or delete any files? If yes, which ones?
+- [ ] Are those file paths relative (like `"data/notes.db"`) or absolute (like `"/Users/me/notes.db"`)? Relative paths are safer.
+- [ ] Could any file operation overwrite something important by accident?
 
 ---
 
-## Step 5: Subprocess / shell operations
+## Section 3: Network requests
 
-Search the script for: `subprocess`, `os.system(`, `os.popen(`, `Popen`
+Network requests send data to or receive data from the internet. Look for:
+- `requests.get(url)` or `requests.post(url)` — HTTP requests
+- `urllib.request.urlopen()` — another way to make web requests
+- Any URL that starts with `http://` or `https://`
 
-| Question | Your answer |
-|---|---|
-| Does the script run any shell commands? | |
-| If yes — what command? | |
-| Could a user-supplied value be injected into the command? | |
-
----
-
-## Step 6: Dynamic execution
-
-Search the script for: `eval(`, `exec(`, `compile(`
-
-| Question | Your answer |
-|---|---|
-| Does the script use `eval`, `exec`, or `compile`? | |
-| If yes — where, and what is being executed? | |
+**Questions:**
+- [ ] Does this code make any network requests? If yes, to which URLs?
+- [ ] Is any personal data or user input being sent in those requests?
+- [ ] If the network is unavailable, does the code fail gracefully (show an error message) or crash?
 
 ---
 
-## Step 7: AI-assisted explanation
+## Section 4: Secrets and API keys
 
-Paste the full script into Claude and ask:
+Secrets are values like API keys, passwords, and database credentials. They should never appear in your code as plain text. Look for:
+- `os.getenv("KEY_NAME")` — the safe way to read a secret
+- `load_dotenv()` — loads secrets from a `.env` file
+- Any string that looks like a long random code (`"sk-proj-abc123..."`) — this should NOT be in your code
 
-> "I am reviewing this Python script before running it. Explain what each section does in plain English, focusing on what files it reads or writes, what network calls it makes, and whether it does anything that cannot be undone."
-
-Then ask these two follow-up questions and paste the answers below:
-
-**Q1: "Does this script write or overwrite any files on my computer? If yes, which ones?"**
-
-> AI answer:
-
-**Q2: "Does this script send any of my data to an external server? If yes, what data and where?"**
-
-> AI answer:
+**Questions:**
+- [ ] Does this code use any API keys or passwords?
+- [ ] Are they loaded from environment variables (safe) or hardcoded in the file (not safe)?
+- [ ] Is `.env` listed in your `.gitignore`? (It should be — this prevents secrets from being uploaded to GitHub.)
 
 ---
 
-## Step 8: Risk summary
+## Section 5: Database operations
 
-Based on your review, complete this table:
+Database operations read from or write to a local database file. Look for:
+- `sqlite3.connect()` — opens a SQLite database
+- `.execute()` — runs a database query
+- `conn.commit()` — saves changes to the database
+- `conn.close()` — closes the connection
 
-| Risk | Low / Medium / High | Your reasoning |
-|---|---|---|
-| Could delete or corrupt my files | | |
-| Could expose my private data | | |
-| Could install software without my knowledge | | |
-| Could run commands I did not authorize | | |
-| Depends on an external service being available | | |
-
----
-
-## Step 9: Virtual environment
-
-Before running, confirm you have:
-
-- [ ] Created a virtual environment (`python -m venv venv`)
-- [ ] Activated it (`(venv)` shows in my terminal prompt)
-- [ ] Installed required packages inside it (`pip install requests`)
-- [ ] Confirmed I am NOT running as root/administrator
+**Questions:**
+- [ ] Does this code use a database? If yes, what file is it stored in?
+- [ ] Is the connection closed after each operation? (Leaving connections open can cause "database is locked" errors.)
+- [ ] Does any SQL query include user input directly? (It should use `?` placeholders, not string formatting, to prevent SQL injection.)
 
 ---
 
-## Step 10: Final judgment
+## Section 6: External subprocess calls
 
-**Would you run this script on a computer you care about?**
+Subprocess calls run system commands directly on your computer. These are rare in Streamlit apps but worth checking. Look for:
+- `subprocess.run()`, `subprocess.Popen()`
+- `os.system()`
 
-> Circle one: **YES** / **NO** / **YES, WITH MODIFICATIONS**
-
-**Explain your reasoning (2–3 sentences):**
-
->
+**Questions:**
+- [ ] Does this code run any system commands? If yes, what commands?
+- [ ] Is any user input passed directly to a system command? (This is a significant security risk.)
 
 ---
 
-## Bonus question
+## Section 7: Overall assessment
 
-Find the line in `review_me.py` that writes a file. Paste it here:
+After working through the sections above with Claude Code's help:
 
-```python
-# paste the line(s) here
-```
+- [ ] I understand what every major section of this code does.
+- [ ] I am comfortable with all the files it might write or read.
+- [ ] I am comfortable with all the network requests it makes.
+- [ ] All secrets are in `.env`, not in the code file.
+- [ ] I have run the code and confirmed it does what I expect.
 
-Ask the AI: "How would I change this so the script asks the user for permission before writing any file?"
-
-Paste the AI's suggested change here:
-
-```python
-# paste suggested code here
-```
+**If any checkbox above is unchecked:** Ask Claude Code to explain or fix that item before deploying.

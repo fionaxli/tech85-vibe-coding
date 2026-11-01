@@ -6,219 +6,244 @@ footer: "TECH 85 · Week 2 · Stanford Continuing Studies"
 ---
 
 <!-- _class: lead -->
-# Week 2: Turning an Idea into Clear Instructions
+# Week 2: Context Engineering & Your BRIEF
 ### TECH 85: Vibe Coding
-Stanford Continuing Studies · Jan 26, 2027
+Stanford Continuing Studies · January 27
 
 ---
 
 ## Agenda
 
-1. Why specs matter before you start coding
-2. What makes a prompt weak vs. strong
-3. The iterative refinement loop
-4. The "explain back" technique
-5. Demo: building a tool from a spec live
-6. Lab: write your spec and build your first personal tool
+1. Recap: Week 1 takeaways
+2. Why context is the new source code
+3. The four-component model of a great context
+4. Common anti-patterns (with before/after examples)
+5. BRIEF.md: your spec artifact
+6. CLAUDE.md: giving the agent memory
+7. Lab overview + Project 1 launch
 
 ---
 
-## Last Week's Takeaway
+## Recap: where we are
 
-You ran the word counter and asked the AI to change something.
+Last week: you ran an AI-generated tool and modified it.
 
-**What you actually did:**
-- Described a desired behavior in plain English
-- Let the AI translate that into code
-- Ran the result
+You experienced the agent loop firsthand. You saw that Claude Code takes real actions — it edits files, runs code, reports back.
 
-That is vibe coding. This week we make it *systematic*.
+This week: we go one level deeper.
 
----
+**The single biggest factor in whether Claude Code builds what you want:**
+the quality of the context you give it.
 
-## The Problem with Jumping Straight In
-
-Imagine asking a contractor to "renovate your kitchen" without a plan.
-
-They show up Monday. You meant a new countertop. They ripped out the cabinets.
-
-**Same thing happens with AI coding:**
-
-- Vague request → AI makes assumptions
-- You get code that does something, just not what you meant
-- You spend more time correcting than building
-
-The fix: write a one-page spec *before* you prompt.
+Not your technical knowledge. Not the language you pick. The context.
 
 ---
 
-## What Is a Spec?
+## Context engineering: not just "prompting"
 
-A spec (specification) is a short written description of your tool, written before you build it.
+"Prompting" sounds like a one-shot question. You ask, it answers.
 
-**Five parts — one page total:**
+**Context engineering** is a discipline. You are designing the full information environment the AI works in:
 
-| Part | Question it answers |
-|------|-------------------|
-| Goal | What does this tool do? (one sentence) |
-| Inputs | What does it receive? (files, text, numbers) |
-| Outputs | What does it produce or print? |
-| Steps | What are the main operations? |
-| Edge cases | What if something is missing or weird? |
+- What is the goal?
+- What are the constraints?
+- What does "done" look like?
+- What should it avoid?
+- What files or examples should it consider?
 
-Think of it as a recipe before you cook.
+A great context takes 10–15 minutes to write. It saves hours of back-and-forth.
 
----
-
-## Weak Prompt vs. Strong Prompt
-
-**Weak:**
-> "Make a tool that cleans up my notes."
-
-**Strong:**
-> "You are a Python developer helping a non-programmer. Write a single Python script that reads a plain-text file of meeting notes, removes any line starting with 'Action:', and saves the remaining lines to summary.txt. Use only Python's built-in standard library. Include a comment at the top showing the exact command to run it."
-
-**The difference:** role, exact behavior, constraint (no extra libraries), output format.
+A weak context produces correct-looking code that does the wrong thing.
 
 ---
 
-## Anatomy of a Strong Prompt
+## The four components of a great context
 
-Every good first prompt has four ingredients:
+| Component | Question it answers | Example |
+|---|---|---|
+| **Goal** | What are we building? | "A Streamlit app that lets me log daily habits" |
+| **Constraints** | What must / must not happen? | "Must work offline. No paid APIs. Use SQLite." |
+| **Example of done** | What does success look like? | "I can add a habit, check it off, and see a 7-day streak." |
+| **Tone / style** | How should the output look or feel? | "Simple, no jargon. One screen. Mobile-friendly." |
 
+Every weak prompt is missing at least one of these.
+
+Add all four and Claude Code knows what it is building, what the limits are, and how to know when it is finished.
+
+---
+
+## Anti-pattern #1: the vague goal
+
+**Before:**
+> "Build me a productivity app."
+
+Claude Code will build something. It might be beautiful. It will almost certainly be wrong.
+
+**After:**
+> "Build a Streamlit app that shows me a list of tasks I add each day. Each task has a title and a done/not-done checkbox. When I check off a task, it moves to the bottom of the list. No login required. Use SQLite to store tasks."
+
+What changed: specific domain (tasks), specific behavior (checkbox, reorder), specific constraints (no login, SQLite), implied done condition (tasks persist across sessions).
+
+---
+
+## Anti-pattern #2: missing constraints
+
+**Before:**
+> "Make the dashboard look better."
+
+"Better" is unmeasurable. Claude Code will guess — and probably add things you did not ask for.
+
+**After:**
+> "Redesign the dashboard layout so the most recent entry appears at the top. Use a two-column layout on desktop (chart on the left, data table on the right). Keep the current color scheme. Do not add any new features — layout changes only."
+
+What changed: measurable goal (most recent at top), specific layout (two-column), explicit scope limit (no new features), explicit constraint (keep colors).
+
+---
+
+## Anti-pattern #3: no example of done
+
+**Before:**
+> "Fix the bug in my code."
+
+What bug? Claude Code will look — and may "fix" something that was not broken.
+
+**After:**
+> "When I run `python app.py` and type 'quit' at the prompt, the app crashes with this error: `IndexError: list index out of range`. The expected behavior is that typing 'quit' exits the app cleanly. Here is the relevant function: [paste the function]."
+
+What changed: exact error message, exact trigger, explicit expected behavior, relevant code attached.
+
+---
+
+## The BRIEF.md format
+
+A BRIEF.md is a one-page project specification you write before asking Claude Code to build anything.
+
+```markdown
+# Project BRIEF: My Habit Tracker
+
+## What I'm building
+A simple Streamlit app for tracking daily habits...
+
+## Core features (must-have)
+- Add and remove habits
+- Check off habits each day
+- See a 7-day streak per habit
+
+## Out of scope (not building this)
+- User accounts or login
+- Mobile app
+
+## Example interaction
+Input: I type "Drink water" and click Add
+Output: "Drink water" appears in my habit list with a checkbox
+
+## Technical constraints
+- Language: Python 3.10+, UI: Streamlit, Data: SQLite
+
+## Done means...
+- I can add a habit and it appears immediately
+- Checked habits are still checked after I restart the app
 ```
-1. ROLE
-   "You are a Python developer helping a non-programmer."
-
-2. TASK  (paste your spec here)
-   "Build a script that reads a CSV and prints totals per category."
-
-3. CONSTRAINTS
-   "One file. Use only Python's built-in standard library."
-
-4. OUTPUT FORMAT
-   "Give me the full script with a comment showing how to run it."
-```
-
-You do not have to memorize this. The spec template will remind you.
 
 ---
 
-## The Iterative Refinement Loop
+## Why "out of scope" matters
 
-AI code is rarely perfect on try one — and that is fine.
+The most overlooked section of any spec.
 
-```
-Prompt
-  ↓
-Get first version
-  ↓
-Run it (or read it)
-  ↓
-Identify ONE thing that is wrong or missing
-  ↓
-Ask for that specific change
-  ↓
-Repeat (usually 2–3 loops)
-```
+If you do not tell Claude Code what you are NOT building, it will make decisions for you. Sometimes those decisions are fine. Often they are not.
 
-**Key rule:** change one thing at a time. Asking for five changes at once produces messy code and confusing explanations.
+Common examples of scope creep without an "out of scope" section:
+- Claude Code adds user authentication when you just wanted a simple personal tool
+- It adds a REST API when you just wanted a local script
+- It uses a cloud database when you just wanted a local file
+
+Write "out of scope" every time. It takes 30 seconds and saves significant cleanup.
 
 ---
 
-## How to Ask for a Change
+## CLAUDE.md: giving the agent memory
 
-**Don't say:** "Fix the code."
+Every new Claude Code session starts fresh. It does not remember last week's conversation.
 
-**Do say:**
+`CLAUDE.md` is the fix. Put this file in your project folder. Claude Code reads it automatically every time it opens your project.
 
-> "Right now the script prints every result on a single line.
-> I would like it to print a numbered list instead, like:
->   1. first result
->   2. second result
-> Here is the current code: [paste]"
+What to put in it:
+- Two-sentence project summary
+- Tech stack (language, UI, database, key libraries)
+- File structure
+- Coding conventions ("keep functions small," "never hardcode keys")
+- Known issues the agent should know about
 
-Describe what **you see** and what **you want to see**. The AI figures out how.
-
----
-
-## The "Explain Back" Technique
-
-After getting code, before running it:
-
-> "Explain what each section of this code does in plain English,
-> as if I have never coded before."
-
-**Why this helps:**
-- You learn what the code actually does
-- AI reasoning errors surface during the explanation
-- You will catch problems like "wait, that deletes the original file?"
-
-This is your safety check. Use it every time.
+Think of it as the briefing you give a new developer who is joining your project mid-stream.
 
 ---
 
-## Demo: Building the Meeting Note Formatter
+## BRIEF.md vs. CLAUDE.md
 
-*Watch me build the example tool from `example_spec.md` live.*
+They are different artifacts that serve different purposes.
 
-Steps I will follow:
-1. Open the spec
-2. Paste the framing message + spec into Claude
-3. Copy the code, save to a file, run it
-4. Show what happens when it fails
-5. Paste the error back, get the fix
-6. Use "explain back" on the final version
+| | BRIEF.md | CLAUDE.md |
+|---|---|---|
+| **Purpose** | Spec for what to build | Ongoing memory for the agent |
+| **Written** | Before you start | As you build, keep it updated |
+| **Length** | 1 page | Half a page to 1 page |
+| **Audience** | Claude Code (and you) | Claude Code (every session) |
+| **Lives in** | Your course folder | Your project's root folder |
 
----
-
-## What You Will Build Today
-
-A personal tool based on your own idea from Week 1.
-
-**By the end of lab you will have:**
-- A filled-in one-page spec
-- A working Python script that runs on a real file
-- One completed refinement cycle
-
-**Starter files in `starter/`:**
-- `spec_template.md` — fill this in
-- `example_spec.md` — see a completed example
+The BRIEF.md is the blueprint. The CLAUDE.md is the handbook.
 
 ---
 
-## Lab Overview (45 min)
+## Project 1: launched today
 
-| Time | Activity |
-|------|----------|
-| 0–15 min | Part 1: Write your spec (use the template) |
-| 15–35 min | Part 2: Prompt the AI, get code, run it |
-| 35–45 min | Part 3: Make one refinement, use "explain back" |
+Three track options. Pick one, or bring your own.
 
-No idea? Pick from the list in the README:
-- Word count per file, expense totals, name reformatter, keyword finder
+**Track A — Daily Habit Tracker**
+A Streamlit app that lets you log habits, check them off daily, and see a streak. Stored in SQLite. No login required.
 
-**Raise your hand** if you get stuck — do not wait more than 3 minutes.
+**Track B — Reading List Manager**
+A Streamlit app where you add books, tag them (want to read / reading / done), write notes, and search your list.
 
----
+**Track C — Bring your own**
+You have an idea from Week 1. Today you write the BRIEF and commit to it.
 
-## Key Takeaways
-
-1. **Spec first, code second** — a one-page spec prevents most misunderstandings
-2. **Four-part prompt** — role, task, constraints, output format
-3. **One change at a time** — iterative refinement beats big rewrites
-4. **Explain back** — always ask the AI to explain before you trust the code
-5. **Errors are information** — paste error messages back; they are not failures
+By end of class: BRIEF.md written, project folder scaffolded, CLAUDE.md in place.
 
 ---
 
-## Before Next Week
+## Lab overview
 
-Run your tool on several different inputs. Find at least one case where it behaves unexpectedly or crashes. Write down:
-- What input you gave it
-- What happened
-- What you expected
+**What you are doing today (65 min)**
 
-You will use this in Week 3 when we learn to read code safely.
+| Part | Time | What you do |
+|---|---|---|
+| Part 1 | 15 min | Critique 3 weak prompts, rewrite them using the four-component model |
+| Part 2 | 20 min | Write your BRIEF.md using the template |
+| Part 3 | 20 min | Give your BRIEF.md to Claude Code, watch it scaffold your project |
+| Part 4 | 10 min | Add and polish a CLAUDE.md in your project folder |
 
-**Next session:** Feb 2 — Reading and running AI-generated code safely
+Templates in `starter/`: `BRIEF_template.md`, `example_BRIEF.md`, `CLAUDE_md_template.md`
+
+---
+
+## Key takeaways
+
+- Context engineering is the discipline of designing the full information environment for an AI agent
+- The four components: goal, constraints, example of done, tone/style
+- Every weak prompt is missing at least one of these
+- BRIEF.md is your spec artifact — write it before you build
+- CLAUDE.md gives Claude Code persistent memory of your project
+- "Out of scope" is the most overlooked section — write it every time
+
+---
+
+## Reading for next week
+
+**Before Wednesday, February 3:**
+
+1. *Beyond Vibe Coding* — Chapters 3 and 4 (~25 min). Chapter 4 introduces the review-refine-own cycle you will practice in Week 3's lab.
+
+2. Stanford CS146S Week 2 notes at [themodernsoftware.dev/fall2025](https://themodernsoftware.dev/fall2025) (~5 min)
+
+**Also:** Make progress on Project 1. Come to Week 3 with something running — even if it is just the scaffolded skeleton. Week 3 is your first demo day.

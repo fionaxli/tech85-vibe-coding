@@ -1,190 +1,235 @@
-"""Week 7 starter: research helper agent.
+"""
+Week 7 research agent starter: demonstrates the plan-first pattern.
 
-This agent takes a question from the command line, searches Wikipedia for
-relevant information, then asks Claude to summarize an answer based on
-what it found.
+This script shows how to structure a multi-step agent task:
+  1. Ask for a plan before writing code
+  2. Execute the plan step by step
+  3. Save results to SQLite
 
-How to run:
-    python research_agent_starter.py "What is machine learning?"
-    python research_agent_starter.py "Who invented the telephone?"
+The example here: a simple research tool that fetches quotes on a topic,
+extracts the key ideas, and saves them to a database for review.
 
-Setup:
-    pip install anthropic requests python-dotenv
+This is a simplified version of a real research agent. The important
+thing is the STRUCTURE — not the specific task.
 
-    Set your Anthropic API key in a .env file in this folder:
-        ANTHROPIC_API_KEY=sk-ant-your-key-here
+Run it:
+    pip install streamlit requests
+    streamlit run research_agent_starter.py
 
-    OR set it as an environment variable:
-        export ANTHROPIC_API_KEY=sk-ant-your-key-here   (Mac/Linux)
-        set ANTHROPIC_API_KEY=sk-ant-your-key-here      (Windows)
+--- HOW THE PLAN-FIRST PATTERN IS SHOWN IN THIS FILE ---
 
-Lab task:
-    Three sections are marked TODO. Implement each one using AI help.
-    See the README for step-by-step instructions.
+Look for comments marked with [PLAN STEP N] throughout the code.
+Each section corresponds to one step of a plan that Claude Code
+would have written before building this file.
+
+The plan was:
+  Step 1: Define the database schema and create the table
+  Step 2: Write a function to fetch data from a public API
+  Step 3: Write a function to extract the key idea from a result
+  Step 4: Write a function to save results to the database
+  Step 5: Build the Streamlit UI that ties it all together
+  Step 6: Test each step in isolation before connecting them
+
+Notice: each step is a separate function with a clear, testable contract.
 """
 
-import os
-import sys
-import urllib.parse
-
+import sqlite3
 import requests
+import streamlit as st
+from datetime import datetime
 
-# Load .env file if it exists (sets ANTHROPIC_API_KEY from .env)
-try:
-    from dotenv import load_dotenv
-    load_dotenv()
-except ImportError:
-    pass  # python-dotenv not installed; assume env var is set another way
-
-try:
-    import anthropic
-except ImportError:
-    print("Error: the 'anthropic' library is not installed.")
-    print("Run: pip install anthropic")
-    sys.exit(1)
+DB_FILE = "research.db"
 
 
-# ---------------------------------------------------------------------------
-# TODO 1: Implement the Wikipedia search function
-# ---------------------------------------------------------------------------
+# -----------------------------------------------------------------------
+# [PLAN STEP 1] Database: schema and initialization
+#
+# Plan note: "Create a research_results table. Each row stores:
+# the search query, the source URL, a key idea extracted from the result,
+# and the timestamp. The id is auto-assigned."
+# -----------------------------------------------------------------------
 
-def search_wikipedia(query: str) -> str:
-    """Search Wikipedia and return a plain-text summary of the most relevant article.
+def initialize_database() -> None:
+    """Create the research_results table if it does not already exist."""
+    conn = sqlite3.connect(DB_FILE)
+    conn.execute("""
+        CREATE TABLE IF NOT EXISTS research_results (
+            id          INTEGER PRIMARY KEY AUTOINCREMENT,
+            query       TEXT    NOT NULL,
+            source      TEXT    NOT NULL,
+            key_idea    TEXT    NOT NULL,
+            saved_at    TEXT    NOT NULL
+        )
+    """)
+    conn.commit()
+    conn.close()
 
-    Uses the Wikipedia REST API:
-        https://en.wikipedia.org/api/rest_v1/page/summary/{title}
 
-    Steps to implement:
-    1. URL-encode the query so spaces and special characters work in a URL.
-       Use: urllib.parse.quote(query)
-    2. Make a GET request to the Wikipedia summary endpoint with that title.
-       Set a timeout of 10 seconds.
-    3. If the response status code is 200, return the "extract" field from
-       the JSON response (this is the plain-English article summary).
-    4. If the status code is 404 (article not found), return this string:
-       "No Wikipedia article found for: {query}"
-    5. If any other error occurs (network error, timeout, etc.), return:
-       "Wikipedia search failed: {error message}"
+def save_result(query: str, source: str, key_idea: str) -> None:
+    """Save one research result to the database."""
+    conn = sqlite3.connect(DB_FILE)
+    conn.execute(
+        "INSERT INTO research_results (query, source, key_idea, saved_at) VALUES (?, ?, ?, ?)",
+        (query, source, key_idea, datetime.now().isoformat()),
+    )
+    conn.commit()
+    conn.close()
 
-    Args:
-        query: a search term, e.g., "photosynthesis" or "Alan Turing"
 
-    Returns:
-        A string containing the Wikipedia article summary, or an error message.
+def get_saved_results(limit: int = 20) -> list[dict]:
+    """Return the most recent saved results."""
+    conn = sqlite3.connect(DB_FILE)
+    rows = conn.execute(
+        "SELECT query, source, key_idea, saved_at FROM research_results "
+        "ORDER BY saved_at DESC LIMIT ?",
+        (limit,),
+    ).fetchall()
+    conn.close()
+    return [{"query": r[0], "source": r[1], "key_idea": r[2], "saved_at": r[3]} for r in rows]
+
+
+# -----------------------------------------------------------------------
+# [PLAN STEP 2] Fetch data from a public API
+#
+# Plan note: "Use the ZenQuotes API (free, no key required) to fetch
+# quotes on a topic. Return a list of (quote, author) tuples.
+# Handle network errors gracefully."
+# -----------------------------------------------------------------------
+
+def fetch_quotes(topic: str) -> list[dict]:
+    """Fetch quotes that may be relevant to the given topic.
+
+    Note: ZenQuotes does not support topic filtering in the free tier —
+    this returns random quotes as a stand-in for a real search API.
+    For a real research agent, replace this function with a call to
+    a search API (e.g., DuckDuckGo, Brave Search, or a news API).
     """
-    # TODO 1: implement this function
-    # Remove the line below and replace with your implementation
-    raise NotImplementedError("TODO 1: implement search_wikipedia")
+    try:
+        # Fetch a set of quotes to simulate search results
+        response = requests.get("https://zenquotes.io/api/quotes", timeout=10)
+        response.raise_for_status()
+        data = response.json()
+        # Return the first 5 as our "search results"
+        return [{"text": item["q"], "author": item["a"], "url": "zenquotes.io"} for item in data[:5]]
+    except requests.exceptions.ConnectionError:
+        return []
+    except Exception:
+        return []
 
 
-# ---------------------------------------------------------------------------
-# TODO 2: Implement the Claude summarizer function
-# ---------------------------------------------------------------------------
+# -----------------------------------------------------------------------
+# [PLAN STEP 3] Extract the key idea from a result
+#
+# Plan note: "Write a function that takes a result (quote + author)
+# and formats it as a key idea. In a real agent, this would call
+# Claude to summarize. Here we format it directly."
+#
+# TODO: for your Capstone, replace this with a real summarization call.
+# You could call Claude API here:
+# "Summarize this result in one sentence: [paste result text]"
+# -----------------------------------------------------------------------
 
-def summarize_with_claude(question: str, context: str) -> str:
-    """Use the Anthropic API to answer a question based on provided context.
+def extract_key_idea(result: dict, query: str) -> str:
+    """Format a result as a key idea sentence.
 
-    Steps to implement:
-    1. Create an Anthropic client: client = anthropic.Anthropic()
-       It will automatically read ANTHROPIC_API_KEY from environment variables.
-    2. Build a prompt that:
-       - Provides the context (Wikipedia text) to Claude
-       - Asks Claude to answer the question using only the provided context
-       - Asks for a concise answer in 2-3 sentences
-       - Tells Claude to say "I don't have enough information" if the context
-         doesn't contain the answer
-    3. Call client.messages.create() with:
-       - model="claude-opus-4-5"
-       - max_tokens=512
-       - messages=[{"role": "user", "content": your_prompt}]
-    4. Return the text of the first content block:
-       message.content[0].text
-    5. If an AuthenticationError occurs, return a helpful message telling the
-       user their API key is missing or incorrect.
-    6. If any other error occurs, return: "Claude summarization failed: {error}"
+    In a production agent, this function would call an LLM to summarize
+    the result in the context of the query. For this starter, we format
+    the quote directly.
 
-    Args:
-        question: the user's original question
-        context: text retrieved from Wikipedia (or an error message)
-
-    Returns:
-        A string containing Claude's answer.
+    TODO: replace with a real summarization call for your Capstone.
     """
-    # TODO 2: implement this function
-    # Remove the line below and replace with your implementation
-    raise NotImplementedError("TODO 2: implement summarize_with_claude")
+    return f'"{result["text"]}" — {result["author"]}'
 
 
-# ---------------------------------------------------------------------------
-# TODO 3: Add one improvement of your choice
-# ---------------------------------------------------------------------------
+# -----------------------------------------------------------------------
+# [PLAN STEP 4] The agent function: orchestrate steps 2 and 3
+#
+# Plan note: "Create a run_research() function that:
+# 1. Calls fetch_quotes()
+# 2. For each result, calls extract_key_idea()
+# 3. Returns a list of (source, key_idea) tuples"
+# -----------------------------------------------------------------------
 
-def apply_improvement(question: str, answer: str, context: str) -> None:
-    """Apply one improvement to the research helper output.
+def run_research(query: str) -> list[dict]:
+    """Run the research pipeline for a query.
 
-    This function is called after the main answer is printed.
-    Choose ONE of these to implement (or propose your own):
-
-    Option A — Show the source:
-        Print the Wikipedia article title and URL so the user can read more.
-        The Wikipedia URL for a title is: https://en.wikipedia.org/wiki/{url_encoded_title}
-
-    Option B — Save to log file:
-        Append the question, answer, and timestamp to a file called
-        "research_log.txt" so users can review past queries.
-        Use: from datetime import datetime; datetime.now().isoformat()
-
-    Option C — Interactive loop:
-        This function doesn't directly support it, but you can modify main()
-        to keep asking for questions until the user types "quit".
-
-    Option D — Confidence check:
-        Ask Claude a second question: "On a scale of 1-10, how confident are
-        you in the answer you just gave, and why?" Print the confidence rating.
-
-    Args:
-        question: the user's original question
-        answer: the answer Claude produced
-        context: the Wikipedia context that was used
+    This is the orchestration layer: it calls the fetch and extract
+    functions in the right order and assembles the results.
     """
-    # TODO 3: implement one improvement
-    # If you choose Option C, modify main() instead of this function
-    pass  # replace this with your implementation
+    raw_results = fetch_quotes(query)
+    if not raw_results:
+        return []
+
+    processed = []
+    for result in raw_results:
+        key_idea = extract_key_idea(result, query)
+        processed.append({
+            "source": result["url"],
+            "key_idea": key_idea,
+        })
+    return processed
 
 
-# ---------------------------------------------------------------------------
-# Main — reads question from command line, runs the agent loop
-# (structure is complete; do not modify until you have finished TODO 1 and 2)
-# ---------------------------------------------------------------------------
+# -----------------------------------------------------------------------
+# [PLAN STEP 5] Streamlit UI
+#
+# Plan note: "Build a two-panel UI:
+# - Left panel (sidebar): run a new research query
+# - Main panel: show saved results with search/filter"
+# -----------------------------------------------------------------------
 
 def main() -> None:
-    if len(sys.argv) < 2:
-        print("Usage: python research_agent_starter.py \"your question here\"")
-        print("Example: python research_agent_starter.py \"What is photosynthesis?\"")
-        sys.exit(1)
+    st.title("Research Agent")
+    st.caption(
+        "A plan-first example: fetch information, extract key ideas, save to database. "
+        "See the code comments for how this maps to the plan-first pattern."
+    )
 
-    question = " ".join(sys.argv[1:])
+    initialize_database()
 
-    print(f"Question: {question}")
-    print("Searching Wikipedia...")
+    # --- Sidebar: run research ---
+    with st.sidebar:
+        st.header("New Research")
+        query = st.text_input("Topic or question", placeholder="e.g., resilience, creativity")
+        if st.button("Run Research", type="primary"):
+            if query.strip():
+                with st.spinner("Researching..."):
+                    results = run_research(query.strip())
+                if results:
+                    for r in results:
+                        save_result(query.strip(), r["source"], r["key_idea"])
+                    st.success(f"Saved {len(results)} results.")
+                    st.rerun()
+                else:
+                    st.warning("No results found. Check your internet connection.")
+            else:
+                st.warning("Enter a topic to research.")
 
-    context = search_wikipedia(question)
+    # --- Main panel: saved results ---
+    st.subheader("Saved Research")
+    saved = get_saved_results()
+    if not saved:
+        st.info("No research saved yet. Run a query in the sidebar.")
+    else:
+        for item in saved:
+            with st.container(border=True):
+                st.write(item["key_idea"])
+                st.caption(f"Query: {item['query']}  |  {item['saved_at'][:16]}")
 
-    if not context:
-        context = "No information was found."
 
-    print("Asking Claude to summarize...")
-
-    answer = summarize_with_claude(question, context)
-
-    print()
-    print("Answer:")
-    print(answer)
-    print()
-
-    # Call the improvement function (TODO 3)
-    apply_improvement(question, answer, context)
-
+# -----------------------------------------------------------------------
+# [PLAN STEP 6] How to extend this with the plan-first pattern
+#
+# To add a real search API (instead of random quotes), ask Claude Code:
+#
+#   "I want to replace the fetch_quotes() function with a call to the
+#    DuckDuckGo Instant Answer API. Before you write any code, write a
+#    numbered plan of what needs to change. Include: which files change,
+#    which functions are affected, and what could go wrong."
+#
+# Review the plan. Edit it. Then say: "Execute this plan, one step at a
+# time. Pause after each step and tell me what you did."
+# -----------------------------------------------------------------------
 
 if __name__ == "__main__":
     main()
