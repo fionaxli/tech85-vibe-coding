@@ -1,0 +1,633 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TECH 85: Vibe Coding — Stanford Continuing Studies</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: { sans: ['Inter', 'sans-serif'] },
+          colors: {
+            stanford: '#8C1515',
+            'stanford-light': '#B83A4B',
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    body { font-family: 'Inter', sans-serif; }
+    .tab-btn { transition: all 0.15s ease; }
+    .tab-btn.active {
+      border-bottom: 2px solid #8C1515;
+      color: #8C1515;
+      font-weight: 600;
+    }
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+    .week-row:hover { background-color: #f9fafb; }
+    .badge-p1 { background: #dbeafe; color: #1d4ed8; }
+    .badge-p2 { background: #dcfce7; color: #15803d; }
+    .badge-cap { background: #f3e8ff; color: #7e22ce; }
+    .badge-demo { background: #fef3c7; color: #92400e; }
+    .badge-guest { background: #ffe4e6; color: #9f1239; }
+    .avatar {
+      width: 56px; height: 56px;
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 700; font-size: 1.1rem; color: white;
+      flex-shrink: 0;
+    }
+    .tool-card { border-left: 3px solid #8C1515; }
+    @media (max-width: 640px) {
+      .schedule-table th:nth-child(3),
+      .schedule-table td:nth-child(3) { display: none; }
+    }
+  </style>
+</head>
+<body class="bg-white text-gray-900 antialiased">
+
+  <!-- Top bar -->
+  <div class="bg-stanford h-1 w-full"></div>
+
+  <!-- Header -->
+  <header class="border-b border-gray-200">
+    <div class="max-w-5xl mx-auto px-4 sm:px-6 py-5 flex items-start justify-between gap-4">
+      <div>
+        <div class="text-xs font-medium text-stanford uppercase tracking-widest mb-1">Stanford Continuing Studies</div>
+        <h1 class="text-2xl sm:text-3xl font-bold text-gray-900 leading-tight">TECH 85: Vibe Coding</h1>
+        <p class="text-gray-500 mt-1 text-sm">Build real software with AI — no CS degree required</p>
+      </div>
+      <div class="text-right text-sm text-gray-500 shrink-0 pt-1">
+        <div class="font-medium text-gray-700">Winter 2026</div>
+        <div>Jan 20 – Mar 10</div>
+      </div>
+    </div>
+
+    <!-- Tabs -->
+    <div class="max-w-5xl mx-auto px-4 sm:px-6 flex gap-1 border-t border-gray-100">
+      <button class="tab-btn active px-4 py-3 text-sm text-gray-600 border-b-2 border-transparent" onclick="showTab('overview', this)">Overview</button>
+      <button class="tab-btn px-4 py-3 text-sm text-gray-600 border-b-2 border-transparent" onclick="showTab('syllabus', this)">Syllabus</button>
+      <button class="tab-btn px-4 py-3 text-sm text-gray-600 border-b-2 border-transparent" onclick="showTab('faq', this)">FAQ</button>
+    </div>
+  </header>
+
+  <main class="max-w-5xl mx-auto px-4 sm:px-6 py-10">
+
+    <!-- ============================
+         OVERVIEW TAB
+    ============================= -->
+    <div id="tab-overview" class="tab-content active space-y-12">
+
+      <!-- About -->
+      <section>
+        <h2 class="text-xl font-semibold text-gray-900 mb-4">About the course</h2>
+        <div class="text-gray-600 leading-relaxed space-y-3 max-w-3xl">
+          <p>Most coding courses teach you to write code. This course teaches you to <strong class="text-gray-800">direct</strong> an AI that writes code for you — then read, test, and own what it builds.</p>
+          <p>You will leave with three real, deployed projects and a mental model that transfers to every tool that comes next. The skill you are developing is not Python syntax. It is <strong class="text-gray-800">context engineering</strong>: knowing how to give an AI coding agent the right information at the right time, so it builds exactly what you have in mind.</p>
+          <p>This course uses <strong class="text-gray-800">Claude Code</strong> exclusively — one tool, learned deeply, from Week 1 through Demo Day.</p>
+        </div>
+      </section>
+
+      <!-- Key info -->
+      <section>
+        <h2 class="text-xl font-semibold text-gray-900 mb-4">Course information</h2>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 max-w-2xl">
+          <div class="bg-gray-50 rounded-lg p-4">
+            <div class="text-xs text-gray-400 uppercase tracking-wide mb-1">Schedule</div>
+            <div class="text-sm font-medium text-gray-800">Wednesdays, 7:00–8:30 PM PT</div>
+            <div class="text-sm text-gray-500">January 20 – March 10, 2026</div>
+          </div>
+          <div class="bg-gray-50 rounded-lg p-4">
+            <div class="text-xs text-gray-400 uppercase tracking-wide mb-1">Format</div>
+            <div class="text-sm font-medium text-gray-800">In-person, Stanford Campus</div>
+            <div class="text-sm text-gray-500">Room posted on Canvas before Week 1</div>
+          </div>
+          <div class="bg-gray-50 rounded-lg p-4">
+            <div class="text-xs text-gray-400 uppercase tracking-wide mb-1">Prerequisites</div>
+            <div class="text-sm font-medium text-gray-800">No coding experience required</div>
+            <div class="text-sm text-gray-500">Familiarity with AI chat tools helpful</div>
+          </div>
+          <div class="bg-gray-50 rounded-lg p-4">
+            <div class="text-xs text-gray-400 uppercase tracking-wide mb-1">Units</div>
+            <div class="text-sm font-medium text-gray-800">1 continuing studies unit</div>
+            <div class="text-sm text-gray-500">Optional for credit</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Learning objectives -->
+      <section>
+        <h2 class="text-xl font-semibold text-gray-900 mb-4">What you will be able to do</h2>
+        <ol class="space-y-2 max-w-3xl">
+          <li class="flex gap-3 text-sm text-gray-600">
+            <span class="flex-shrink-0 w-6 h-6 rounded-full bg-stanford text-white text-xs flex items-center justify-center font-semibold mt-0.5">1</span>
+            <span>Launch Claude Code and direct it to build a working web application from a plain-language description</span>
+          </li>
+          <li class="flex gap-3 text-sm text-gray-600">
+            <span class="flex-shrink-0 w-6 h-6 rounded-full bg-stanford text-white text-xs flex items-center justify-center font-semibold mt-0.5">2</span>
+            <span>Write a BRIEF.md specification that gives an AI coding agent everything it needs to get started</span>
+          </li>
+          <li class="flex gap-3 text-sm text-gray-600">
+            <span class="flex-shrink-0 w-6 h-6 rounded-full bg-stanford text-white text-xs flex items-center justify-center font-semibold mt-0.5">3</span>
+            <span>Read AI-generated code confidently — enough to catch errors, ask good follow-up questions, and make informed decisions</span>
+          </li>
+          <li class="flex gap-3 text-sm text-gray-600">
+            <span class="flex-shrink-0 w-6 h-6 rounded-full bg-stanford text-white text-xs flex items-center justify-center font-semibold mt-0.5">4</span>
+            <span>Connect your app to a database (SQLite) and an external API, without managing a server</span>
+          </li>
+          <li class="flex gap-3 text-sm text-gray-600">
+            <span class="flex-shrink-0 w-6 h-6 rounded-full bg-stanford text-white text-xs flex items-center justify-center font-semibold mt-0.5">5</span>
+            <span>Use Git to checkpoint your work before risky changes, and roll back when something breaks</span>
+          </li>
+          <li class="flex gap-3 text-sm text-gray-600">
+            <span class="flex-shrink-0 w-6 h-6 rounded-full bg-stanford text-white text-xs flex items-center justify-center font-semibold mt-0.5">6</span>
+            <span>Describe bugs precisely enough that Claude Code can diagnose and fix them</span>
+          </li>
+          <li class="flex gap-3 text-sm text-gray-600">
+            <span class="flex-shrink-0 w-6 h-6 rounded-full bg-stanford text-white text-xs flex items-center justify-center font-semibold mt-0.5">7</span>
+            <span>Deploy a working app to a public URL and walk someone through it in three minutes</span>
+          </li>
+        </ol>
+      </section>
+
+      <!-- Three projects -->
+      <section>
+        <h2 class="text-xl font-semibold text-gray-900 mb-2">Three projects</h2>
+        <p class="text-sm text-gray-500 mb-5">Every student ships three real projects. Each has three track options — pick one or bring your own idea.</p>
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div class="border border-blue-200 rounded-xl p-5 bg-blue-50/50">
+            <div class="inline-block text-xs font-semibold badge-p1 px-2 py-0.5 rounded-full mb-3">Project 1 · Weeks 2–3</div>
+            <h3 class="font-semibold text-gray-900 mb-2">Personal web app</h3>
+            <p class="text-xs text-gray-500 mb-3">A Streamlit app deployed to a real public URL</p>
+            <ul class="text-xs text-gray-600 space-y-1">
+              <li class="flex gap-2"><span class="text-gray-400">A</span> Daily habit tracker</li>
+              <li class="flex gap-2"><span class="text-gray-400">B</span> Reading list manager</li>
+              <li class="flex gap-2"><span class="text-gray-400">C</span> Bring your own idea</li>
+            </ul>
+          </div>
+          <div class="border border-green-200 rounded-xl p-5 bg-green-50/50">
+            <div class="inline-block text-xs font-semibold badge-p2 px-2 py-0.5 rounded-full mb-3">Project 2 · Weeks 5–6</div>
+            <h3 class="font-semibold text-gray-900 mb-2">Data-connected app</h3>
+            <p class="text-xs text-gray-500 mb-3">SQLite database + an external API</p>
+            <ul class="text-xs text-gray-600 space-y-1">
+              <li class="flex gap-2"><span class="text-gray-400">A</span> Local weather journal</li>
+              <li class="flex gap-2"><span class="text-gray-400">B</span> News digest saver</li>
+              <li class="flex gap-2"><span class="text-gray-400">C</span> Bring your own idea</li>
+            </ul>
+          </div>
+          <div class="border border-purple-200 rounded-xl p-5 bg-purple-50/50">
+            <div class="inline-block text-xs font-semibold badge-cap px-2 py-0.5 rounded-full mb-3">Capstone · Weeks 7–8</div>
+            <h3 class="font-semibold text-gray-900 mb-2">Your best work</h3>
+            <p class="text-xs text-gray-500 mb-3">An agent, multi-step tool, or polished product</p>
+            <ul class="text-xs text-gray-600 space-y-1">
+              <li class="flex gap-2"><span class="text-gray-400">A</span> Productivity agent</li>
+              <li class="flex gap-2"><span class="text-gray-400">B</span> Data dashboard</li>
+              <li class="flex gap-2"><span class="text-gray-400">C</span> Bring your own idea</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <!-- Team -->
+      <section>
+        <h2 class="text-xl font-semibold text-gray-900 mb-5">Team</h2>
+        <div class="flex flex-wrap gap-6">
+
+          <!-- Instructor -->
+          <div class="flex gap-4 items-start max-w-xs">
+            <div class="avatar bg-stanford text-white text-lg">FL</div>
+            <div>
+              <div class="font-semibold text-gray-900">Fiona Li</div>
+              <div class="text-xs text-gray-400 mb-1">Instructor</div>
+              <p class="text-xs text-gray-500 leading-relaxed">Stanford Continuing Studies. Building at the intersection of AI and software education.</p>
+            </div>
+          </div>
+
+          <!-- Guest Steve -->
+          <div class="flex gap-4 items-start max-w-xs">
+            <div class="avatar bg-gray-700 text-white">S</div>
+            <div>
+              <div class="font-semibold text-gray-900">Steve</div>
+              <div class="text-xs text-gray-400 mb-1">Guest Speaker · Week 4</div>
+              <p class="text-xs text-gray-500 leading-relaxed">How AI fits into real software projects — practical tips from someone who builds with these tools every day.</p>
+            </div>
+          </div>
+
+          <!-- Guest Sai -->
+          <div class="flex gap-4 items-start max-w-xs">
+            <div class="avatar bg-gray-500 text-white">Sa</div>
+            <div>
+              <div class="font-semibold text-gray-900">Sai</div>
+              <div class="text-xs text-gray-400 mb-1">Guest Speaker · Week 7</div>
+              <p class="text-xs text-gray-500 leading-relaxed">How agents are used in real products — what works in practice, what the failure modes are, and where the field is heading.</p>
+            </div>
+          </div>
+
+        </div>
+      </section>
+
+      <!-- Tools -->
+      <section>
+        <h2 class="text-xl font-semibold text-gray-900 mb-2">Tools</h2>
+        <p class="text-sm text-gray-500 mb-5">Install these before Week 1. Setup guides are in the <a href="https://github.com/fionaxli/tech85-vibe-coding/tree/main/week-01-first-tool" class="text-stanford underline hover:no-underline">Week 1 folder</a>.</p>
+        <div class="space-y-3 max-w-2xl">
+          <div class="tool-card pl-4 py-3 bg-gray-50 rounded-r-lg">
+            <div class="flex items-start justify-between gap-4">
+              <div>
+                <span class="font-semibold text-sm text-gray-900">Claude Code</span>
+                <span class="ml-2 text-xs text-gray-400">Primary tool — used every week</span>
+                <p class="text-xs text-gray-500 mt-0.5">The AI coding agent. Runs in your terminal. Writes, edits, and debugs code from your instructions.</p>
+              </div>
+              <span class="text-xs text-gray-400 shrink-0 mt-0.5">~$20/mo</span>
+            </div>
+          </div>
+          <div class="tool-card pl-4 py-3 bg-gray-50 rounded-r-lg">
+            <div class="flex items-start justify-between gap-4">
+              <div>
+                <span class="font-semibold text-sm text-gray-900">Python 3.10+</span>
+                <p class="text-xs text-gray-500 mt-0.5">The language Claude Code writes. You won't type Python yourself — but it needs to be installed.</p>
+              </div>
+              <span class="text-xs text-green-600 shrink-0 mt-0.5 font-medium">Free</span>
+            </div>
+          </div>
+          <div class="tool-card pl-4 py-3 bg-gray-50 rounded-r-lg">
+            <div class="flex items-start justify-between gap-4">
+              <div>
+                <span class="font-semibold text-sm text-gray-900">VS Code</span>
+                <p class="text-xs text-gray-500 mt-0.5">A code editor. You'll read AI-generated code here, not write it from scratch.</p>
+              </div>
+              <span class="text-xs text-green-600 shrink-0 mt-0.5 font-medium">Free</span>
+            </div>
+          </div>
+          <div class="tool-card pl-4 py-3 bg-gray-50 rounded-r-lg">
+            <div class="flex items-start justify-between gap-4">
+              <div>
+                <span class="font-semibold text-sm text-gray-900">Git + GitHub</span>
+                <p class="text-xs text-gray-500 mt-0.5">Version control. Git saves checkpoints locally; GitHub stores them in the cloud. Covered in Week 4.</p>
+              </div>
+              <span class="text-xs text-green-600 shrink-0 mt-0.5 font-medium">Free</span>
+            </div>
+          </div>
+          <div class="tool-card pl-4 py-3 bg-gray-50 rounded-r-lg">
+            <div class="flex items-start justify-between gap-4">
+              <div>
+                <span class="font-semibold text-sm text-gray-900">Streamlit Cloud</span>
+                <p class="text-xs text-gray-500 mt-0.5">Deploys your app to a real public URL. One click from your GitHub repo. Covered in Week 3.</p>
+              </div>
+              <span class="text-xs text-green-600 shrink-0 mt-0.5 font-medium">Free</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Readings -->
+      <section>
+        <h2 class="text-xl font-semibold text-gray-900 mb-4">Required readings</h2>
+        <div class="space-y-4 max-w-2xl">
+          <div class="flex gap-4 p-4 border border-gray-200 rounded-xl">
+            <div class="flex-shrink-0 w-10 h-14 bg-gray-900 rounded flex items-center justify-center text-white text-xs font-bold text-center leading-tight px-1">BVC</div>
+            <div>
+              <div class="font-semibold text-sm text-gray-900">Beyond Vibe Coding</div>
+              <div class="text-xs text-gray-500">Addy Osmani · O'Reilly, 2025</div>
+              <p class="text-xs text-gray-500 mt-1">Primary text. Free via O'Reilly Learning through Stanford Library (library.stanford.edu → Databases → O'Reilly). Chapter assignments are listed in each week's README.</p>
+            </div>
+          </div>
+          <div class="flex gap-4 p-4 border border-gray-200 rounded-xl">
+            <div class="flex-shrink-0 w-10 h-14 bg-blue-900 rounded flex items-center justify-center text-white text-xs font-bold text-center leading-tight px-1">CS146S</div>
+            <div>
+              <div class="font-semibold text-sm text-gray-900">The Modern Software Developer</div>
+              <div class="text-xs text-gray-500">Stanford CS146S · <a href="https://themodernsoftware.dev/fall2025" class="text-stanford hover:underline">themodernsoftware.dev/fall2025</a></div>
+              <p class="text-xs text-gray-500 mt-1">Public course materials from Stanford's credit-bearing AI development course. Referenced for deeper dives in Weeks 2, 4, and 5.</p>
+            </div>
+          </div>
+          <div class="flex gap-4 p-4 border border-gray-200 rounded-xl">
+            <div class="flex-shrink-0 w-10 h-14 bg-red-900 rounded flex items-center justify-center text-white text-xs font-bold text-center leading-tight px-1">ICSE</div>
+            <div>
+              <div class="font-semibold text-sm text-gray-900">Vibe Coding in Practice</div>
+              <div class="text-xs text-gray-500">ICSE 2026 proceedings</div>
+              <p class="text-xs text-gray-500 mt-1">"Motivations, Challenges, and a Future." Assigned in Week 8 for the ethics and evaluation discussion.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- GitHub link -->
+      <section class="bg-gray-50 rounded-xl p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <div>
+          <h3 class="font-semibold text-gray-900">Course materials on GitHub</h3>
+          <p class="text-sm text-gray-500 mt-1">All slides, lab guides, and starter code. Open source under MIT License.</p>
+        </div>
+        <a href="https://github.com/fionaxli/tech85-vibe-coding" target="_blank"
+           class="flex items-center gap-2 bg-gray-900 hover:bg-gray-700 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors shrink-0">
+          <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z"/></svg>
+          fionaxli/tech85-vibe-coding
+        </a>
+      </section>
+
+    </div><!-- end overview -->
+
+    <!-- ============================
+         SYLLABUS TAB
+    ============================= -->
+    <div id="tab-syllabus" class="tab-content">
+
+      <!-- Legend -->
+      <div class="flex flex-wrap gap-2 mb-6">
+        <span class="text-xs font-medium badge-p1 px-2.5 py-1 rounded-full">Project 1</span>
+        <span class="text-xs font-medium badge-p2 px-2.5 py-1 rounded-full">Project 2</span>
+        <span class="text-xs font-medium badge-cap px-2.5 py-1 rounded-full">Capstone</span>
+        <span class="text-xs font-medium badge-demo px-2.5 py-1 rounded-full">Demo day</span>
+        <span class="text-xs font-medium badge-guest px-2.5 py-1 rounded-full">Guest speaker</span>
+      </div>
+
+      <!-- Schedule table -->
+      <div class="overflow-x-auto rounded-xl border border-gray-200 mb-12">
+        <table class="w-full text-sm schedule-table">
+          <thead class="bg-gray-50 border-b border-gray-200">
+            <tr>
+              <th class="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide w-20">Week</th>
+              <th class="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Topic</th>
+              <th class="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Milestone</th>
+              <th class="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide w-32">Materials</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-gray-100">
+            <tr class="week-row">
+              <td class="px-4 py-4">
+                <div class="font-semibold text-gray-900">1</div>
+                <div class="text-xs text-gray-400">Jan 20</div>
+              </td>
+              <td class="px-4 py-4">
+                <div class="font-medium text-gray-900">The Vibe Coding Mindset</div>
+                <div class="text-xs text-gray-500 mt-1">What vibe coding is and where it came from. How coding agents work: model → harness → tools. The 70% problem. Director / reviewer / curator mental model. First tool with Claude Code.</div>
+              </td>
+              <td class="px-4 py-4">
+                <span class="text-xs text-gray-400">—</span>
+              </td>
+              <td class="px-4 py-4">
+                <a href="https://github.com/fionaxli/tech85-vibe-coding/tree/main/week-01-first-tool" target="_blank" class="text-stanford text-xs hover:underline">Lab →</a>
+              </td>
+            </tr>
+            <tr class="week-row">
+              <td class="px-4 py-4">
+                <div class="font-semibold text-gray-900">2</div>
+                <div class="text-xs text-gray-400">Jan 27</div>
+              </td>
+              <td class="px-4 py-4">
+                <div class="font-medium text-gray-900">Context Engineering & Your BRIEF</div>
+                <div class="text-xs text-gray-500 mt-1">Why context is the new source code. Anatomy of a great prompt. Writing BRIEF.md. Introducing CLAUDE.md. Common anti-patterns and fixes.</div>
+              </td>
+              <td class="px-4 py-4">
+                <span class="badge-p1 text-xs font-medium px-2.5 py-1 rounded-full">Launch Project 1</span>
+              </td>
+              <td class="px-4 py-4">
+                <a href="https://github.com/fionaxli/tech85-vibe-coding/tree/main/week-02-specs-and-prompts" target="_blank" class="text-stanford text-xs hover:underline">Lab →</a>
+              </td>
+            </tr>
+            <tr class="week-row">
+              <td class="px-4 py-4">
+                <div class="font-semibold text-gray-900">3</div>
+                <div class="text-xs text-gray-400">Feb 3</div>
+              </td>
+              <td class="px-4 py-4">
+                <div class="font-medium text-gray-900">Read, Test & Ship</div>
+                <div class="text-xs text-gray-500 mt-1">The review-refine-own cycle. How to read AI code without writing it. Building a test checklist. Deploying to Streamlit Cloud — real public URL.</div>
+              </td>
+              <td class="px-4 py-4">
+                <span class="badge-demo text-xs font-medium px-2.5 py-1 rounded-full">Project 1 demo</span>
+              </td>
+              <td class="px-4 py-4">
+                <a href="https://github.com/fionaxli/tech85-vibe-coding/tree/main/week-03-reading-code-safely" target="_blank" class="text-stanford text-xs hover:underline">Lab →</a>
+              </td>
+            </tr>
+            <tr class="week-row bg-red-50/30">
+              <td class="px-4 py-4">
+                <div class="font-semibold text-gray-900">4</div>
+                <div class="text-xs text-gray-400">Feb 10</div>
+              </td>
+              <td class="px-4 py-4">
+                <div class="font-medium text-gray-900">Claude Code + Git</div>
+                <div class="text-xs text-gray-500 mt-1">Claude Code as a full coding agent (not just a chatbot). The bug description formula. Git as a checkpoint system. Break it on purpose, then fix it.</div>
+                <div class="mt-2">
+                  <span class="badge-guest text-xs font-medium px-2.5 py-1 rounded-full">Steve · ~45 min</span>
+                </div>
+              </td>
+              <td class="px-4 py-4">
+                <span class="text-xs text-gray-400">—</span>
+              </td>
+              <td class="px-4 py-4">
+                <a href="https://github.com/fionaxli/tech85-vibe-coding/tree/main/week-04-testing-debugging" target="_blank" class="text-stanford text-xs hover:underline">Lab →</a>
+              </td>
+            </tr>
+            <tr class="week-row">
+              <td class="px-4 py-4">
+                <div class="font-semibold text-gray-900">5</div>
+                <div class="text-xs text-gray-400">Feb 17</div>
+              </td>
+              <td class="px-4 py-4">
+                <div class="font-medium text-gray-900">Data & Agent-Ready Repos</div>
+                <div class="text-xs text-gray-500 mt-1">SQLite for data persistence. Designing a schema with AI. What makes a repo "agent-ready" — CLAUDE.md, clear structure, good naming.</div>
+              </td>
+              <td class="px-4 py-4">
+                <span class="badge-p2 text-xs font-medium px-2.5 py-1 rounded-full">Launch Project 2</span>
+              </td>
+              <td class="px-4 py-4">
+                <a href="https://github.com/fionaxli/tech85-vibe-coding/tree/main/week-05-git-github" target="_blank" class="text-stanford text-xs hover:underline">Lab →</a>
+              </td>
+            </tr>
+            <tr class="week-row">
+              <td class="px-4 py-4">
+                <div class="font-semibold text-gray-900">6</div>
+                <div class="text-xs text-gray-400">Feb 24</div>
+              </td>
+              <td class="px-4 py-4">
+                <div class="font-medium text-gray-900">APIs, Auth & Security</div>
+                <div class="text-xs text-gray-500 mt-1">Connecting to external APIs. API key safety (.env, never in frontend). Basic auth patterns. Auditing AI-generated code for security issues.</div>
+              </td>
+              <td class="px-4 py-4">
+                <span class="badge-demo text-xs font-medium px-2.5 py-1 rounded-full">Project 2 demo</span>
+              </td>
+              <td class="px-4 py-4">
+                <a href="https://github.com/fionaxli/tech85-vibe-coding/tree/main/week-06-files-and-data" target="_blank" class="text-stanford text-xs hover:underline">Lab →</a>
+              </td>
+            </tr>
+            <tr class="week-row bg-red-50/30">
+              <td class="px-4 py-4">
+                <div class="font-semibold text-gray-900">7</div>
+                <div class="text-xs text-gray-400">Mar 3</div>
+              </td>
+              <td class="px-4 py-4">
+                <div class="font-medium text-gray-900">Agent Workflows & MCP</div>
+                <div class="text-xs text-gray-500 mt-1">Plan-first vs. prompt-first. Task decomposition for complex features. What MCP is and when to use it. Skills vs. MCP decision tree.</div>
+                <div class="mt-2">
+                  <span class="badge-guest text-xs font-medium px-2.5 py-1 rounded-full">Sai · ~45 min</span>
+                </div>
+              </td>
+              <td class="px-4 py-4">
+                <span class="badge-cap text-xs font-medium px-2.5 py-1 rounded-full">Launch Capstone</span>
+              </td>
+              <td class="px-4 py-4">
+                <a href="https://github.com/fionaxli/tech85-vibe-coding/tree/main/week-07-agents-web-services" target="_blank" class="text-stanford text-xs hover:underline">Lab →</a>
+              </td>
+            </tr>
+            <tr class="week-row">
+              <td class="px-4 py-4">
+                <div class="font-semibold text-gray-900">8</div>
+                <div class="text-xs text-gray-400">Mar 10</div>
+              </td>
+              <td class="px-4 py-4">
+                <div class="font-medium text-gray-900">Demo Day</div>
+                <div class="text-xs text-gray-500 mt-1">Evaluation and LLM-as-a-judge. AI ethics and IP — who owns AI-generated code. The golden rules of vibe coding. 3-minute capstone demos.</div>
+              </td>
+              <td class="px-4 py-4">
+                <span class="badge-demo text-xs font-medium px-2.5 py-1 rounded-full">Capstone demo</span>
+              </td>
+              <td class="px-4 py-4">
+                <a href="https://github.com/fionaxli/tech85-vibe-coding/tree/main/week-08-evaluation-showcase" target="_blank" class="text-stanford text-xs hover:underline">Lab →</a>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Assignments -->
+      <section class="mb-12">
+        <h2 class="text-xl font-semibold text-gray-900 mb-4">Assignments & coursework</h2>
+        <div class="grid sm:grid-cols-2 gap-4 max-w-2xl text-sm text-gray-600">
+          <div class="flex gap-3">
+            <div class="w-8 h-8 rounded-lg bg-blue-100 text-blue-700 flex items-center justify-center text-sm shrink-0">📖</div>
+            <div><strong class="text-gray-800">Weekly readings</strong> — 30 minutes max per week. Chapters from <em>Beyond Vibe Coding</em> and linked references.</div>
+          </div>
+          <div class="flex gap-3">
+            <div class="w-8 h-8 rounded-lg bg-green-100 text-green-700 flex items-center justify-center text-sm shrink-0">🔨</div>
+            <div><strong class="text-gray-800">Three projects</strong> — Easy → Medium → Hard, each with a 3-minute in-class demo.</div>
+          </div>
+          <div class="flex gap-3">
+            <div class="w-8 h-8 rounded-lg bg-purple-100 text-purple-700 flex items-center justify-center text-sm shrink-0">🧪</div>
+            <div><strong class="text-gray-800">Weekly labs</strong> — 65 minutes of hands-on building in every session. Starter files provided.</div>
+          </div>
+          <div class="flex gap-3">
+            <div class="w-8 h-8 rounded-lg bg-yellow-100 text-yellow-700 flex items-center justify-center text-sm shrink-0">💬</div>
+            <div><strong class="text-gray-800">Canvas discussions</strong> — Optional peer threads and instructor feedback on project deliverables.</div>
+          </div>
+        </div>
+      </section>
+
+    </div><!-- end syllabus -->
+
+    <!-- ============================
+         FAQ TAB
+    ============================= -->
+    <div id="tab-faq" class="tab-content max-w-2xl">
+      <div class="space-y-1" id="faq-list">
+
+        <div class="faq-item border border-gray-200 rounded-xl overflow-hidden">
+          <button class="faq-btn w-full text-left px-5 py-4 flex justify-between items-center gap-4 hover:bg-gray-50 transition-colors" onclick="toggleFaq(this)">
+            <span class="font-medium text-gray-900 text-sm">I have never written a line of code. Will I be lost?</span>
+            <svg class="faq-icon w-4 h-4 text-gray-400 shrink-0 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+          </button>
+          <div class="faq-answer hidden px-5 pb-5 text-sm text-gray-600 leading-relaxed">
+            No. This course is designed from the ground up for non-programmers. The first thing you will do in Week 1 is run a Python script — and you will not have written a single line of it. The skills that matter here are clear thinking, good communication, and curiosity. You have all of those.
+          </div>
+        </div>
+
+        <div class="faq-item border border-gray-200 rounded-xl overflow-hidden">
+          <button class="faq-btn w-full text-left px-5 py-4 flex justify-between items-center gap-4 hover:bg-gray-50 transition-colors" onclick="toggleFaq(this)">
+            <span class="font-medium text-gray-900 text-sm">I already know how to code. Is this too basic?</span>
+            <svg class="faq-icon w-4 h-4 text-gray-400 shrink-0 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+          </button>
+          <div class="faq-answer hidden px-5 pb-5 text-sm text-gray-600 leading-relaxed">
+            Probably not. The interesting challenge in this course is not writing code — it is directing an AI to write code well. Experienced programmers often find they need to unlearn the habit of writing everything themselves. The context engineering and agent workflow skills in Weeks 5–7 are useful regardless of prior experience.
+          </div>
+        </div>
+
+        <div class="faq-item border border-gray-200 rounded-xl overflow-hidden">
+          <button class="faq-btn w-full text-left px-5 py-4 flex justify-between items-center gap-4 hover:bg-gray-50 transition-colors" onclick="toggleFaq(this)">
+            <span class="font-medium text-gray-900 text-sm">What if my project is not done by the demo week?</span>
+            <svg class="faq-icon w-4 h-4 text-gray-400 shrink-0 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+          </button>
+          <div class="faq-answer hidden px-5 pb-5 text-sm text-gray-600 leading-relaxed">
+            You demo what you have. A partially working app you understand is better than a complete app you cannot explain. Demos are 3 minutes; the goal is to show something real and explain one decision you made.
+          </div>
+        </div>
+
+        <div class="faq-item border border-gray-200 rounded-xl overflow-hidden">
+          <button class="faq-btn w-full text-left px-5 py-4 flex justify-between items-center gap-4 hover:bg-gray-50 transition-colors" onclick="toggleFaq(this)">
+            <span class="font-medium text-gray-900 text-sm">Can I use these projects in a portfolio?</span>
+            <svg class="faq-icon w-4 h-4 text-gray-400 shrink-0 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+          </button>
+          <div class="faq-answer hidden px-5 pb-5 text-sm text-gray-600 leading-relaxed">
+            Yes. Everything you build is yours. The course uses an MIT License on the starter code, which means you can use, modify, and publish your projects freely. Including AI-generated code in a portfolio is increasingly normal; Week 8 covers how to discuss it honestly.
+          </div>
+        </div>
+
+        <div class="faq-item border border-gray-200 rounded-xl overflow-hidden">
+          <button class="faq-btn w-full text-left px-5 py-4 flex justify-between items-center gap-4 hover:bg-gray-50 transition-colors" onclick="toggleFaq(this)">
+            <span class="font-medium text-gray-900 text-sm">How much time should I expect to spend outside of class?</span>
+            <svg class="faq-icon w-4 h-4 text-gray-400 shrink-0 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+          </button>
+          <div class="faq-answer hidden px-5 pb-5 text-sm text-gray-600 leading-relaxed">
+            About 1–2 hours per week: 30 minutes of reading and 30–90 minutes working on your project. Project weeks (2–3, 5–6, 7–8) require more time. The workload is manageable if you keep up week to week.
+          </div>
+        </div>
+
+        <div class="faq-item border border-gray-200 rounded-xl overflow-hidden">
+          <button class="faq-btn w-full text-left px-5 py-4 flex justify-between items-center gap-4 hover:bg-gray-50 transition-colors" onclick="toggleFaq(this)">
+            <span class="font-medium text-gray-900 text-sm">How much does Claude Code cost?</span>
+            <svg class="faq-icon w-4 h-4 text-gray-400 shrink-0 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+          </button>
+          <div class="faq-answer hidden px-5 pb-5 text-sm text-gray-600 leading-relaxed">
+            Claude Code requires an Anthropic account — either a Pro plan (~$20/month) or a Max plan for heavier usage. Stanford does not provide API credits. The free tiers for all other tools (Python, VS Code, Git, Streamlit Cloud) are sufficient for all coursework. Check current pricing at anthropic.com before enrolling.
+          </div>
+        </div>
+
+      </div>
+    </div><!-- end faq -->
+
+  </main>
+
+  <!-- Footer -->
+  <footer class="mt-20 border-t border-gray-100 py-8">
+    <div class="max-w-5xl mx-auto px-4 sm:px-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 text-xs text-gray-400">
+      <div>
+        <span class="font-medium text-gray-600">TECH 85: Vibe Coding</span>
+        <span class="mx-2">·</span>
+        Stanford Continuing Studies · Winter 2026
+        <span class="mx-2">·</span>
+        Instructor: Fiona Li
+      </div>
+      <div class="flex gap-4">
+        <a href="https://github.com/fionaxli/tech85-vibe-coding" target="_blank" class="hover:text-gray-700 transition-colors">GitHub</a>
+        <a href="https://github.com/fionaxli/tech85-vibe-coding/blob/main/LICENSE" target="_blank" class="hover:text-gray-700 transition-colors">MIT License</a>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    function showTab(name, btn) {
+      // Hide all tab contents
+      document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+      // Remove active from all tab buttons
+      document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+      // Show selected
+      document.getElementById('tab-' + name).classList.add('active');
+      btn.classList.add('active');
+    }
+
+    function toggleFaq(btn) {
+      const answer = btn.nextElementSibling;
+      const icon = btn.querySelector('.faq-icon');
+      const isOpen = !answer.classList.contains('hidden');
+      answer.classList.toggle('hidden', isOpen);
+      icon.style.transform = isOpen ? '' : 'rotate(180deg)';
+    }
+  </script>
+</body>
+</html>
